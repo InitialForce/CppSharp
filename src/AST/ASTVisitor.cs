@@ -72,6 +72,9 @@ namespace CppSharp.AST
             if (!VisitType(tag, quals))
                 return false;
 
+            if (tag.Declaration == null)
+                return false;
+
             return tag.Declaration.Visit(this);
         }
 
