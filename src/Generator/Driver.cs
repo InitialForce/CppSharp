@@ -159,6 +159,7 @@ namespace CppSharp
                 NoStandardIncludes = Options.NoStandardIncludes,
                 NoBuiltinIncludes = Options.NoBuiltinIncludes,
                 MicrosoftMode = Options.MicrosoftMode,
+                Gnu99Mode = Options.Gnu99Mode,
                 Verbose = Options.Verbose,
             };
 

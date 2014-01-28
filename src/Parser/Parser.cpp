@@ -97,9 +97,16 @@ void Parser::SetupHeader()
     std::vector<const char*> args;
     args.push_back("-cc1");
 
-    // Enable C++ language mode
-    args.push_back("-xc++");
-    args.push_back("-std=gnu++11");
+    if (Opts->Gnu99Mode)
+    {
+        args.push_back("-std=gnu99");
+    }
+    else 
+    {
+        // Enable C++ language mode
+        args.push_back("-xc++");
+        args.push_back("-std=gnu++11");
+    }
     args.push_back("-fno-rtti");
 
     // Enable the Microsoft parsing extensions
