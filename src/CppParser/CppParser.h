@@ -39,6 +39,7 @@ struct CS_API ParserOptions
     bool NoStandardIncludes;
     bool NoBuiltinIncludes;
     bool MicrosoftMode;
+    bool Gnu99Mode;
     bool Verbose;
 };
 
