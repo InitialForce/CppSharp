@@ -231,13 +231,12 @@ namespace CppSharp.Generators.CSharp
             if (context.HasFunctions)
             {
                 PushBlock(CSharpBlockKind.Functions);
-                WriteLine("public unsafe partial class {0}{1}", Options.OutputNamespace,
-                    TranslationUnit.FileNameWithoutExtension);
+                WriteLine("public unsafe partial class {0}", Helpers.SafeIdentifier(Options.OutputNamespace));
                 WriteStartBraceIndent();
 
-                PushBlock(CSharpBlockKind.InternalsClass);
-                GenerateClassInternalHead();
-                WriteStartBraceIndent();
+//                PushBlock(CSharpBlockKind.InternalsClass);
+//                GenerateClassInternalHead();
+//                WriteStartBraceIndent();
 
                 // Generate all the internal function declarations.
                 foreach (var function in context.Functions)
@@ -247,15 +246,8 @@ namespace CppSharp.Generators.CSharp
                     GenerateInternalFunction(function);
                 }
 
-                WriteCloseBraceIndent();
-                PopBlock(NewLineKind.BeforeNextBlock);
-
-                foreach (var function in context.Functions)
-                {
-                    if (function.Ignore) continue;
-
-                    GenerateFunction(function);
-                }
+//                WriteCloseBraceIndent();
+//                PopBlock(NewLineKind.BeforeNextBlock);
 
                 WriteCloseBraceIndent();
                 PopBlock(NewLineKind.BeforeNextBlock);
@@ -344,8 +336,8 @@ namespace CppSharp.Generators.CSharp
 
         public void GenerateClass(Class @class)
         {
-            if (@class.IsIncomplete)
-                return;
+            //if (@class.IsIncomplete)
+            //    return;
 
             PushBlock(CSharpBlockKind.Class);
             GenerateDeclarationCommon(@class);
@@ -357,36 +349,45 @@ namespace CppSharp.Generators.CSharp
 
             if (!@class.IsOpaque)
             {
-                GenerateClassInternals(@class);
-                GenerateDeclContext(@class);
-
-                if (@class.Ignore || @class.IsDependent)
-                    goto exit;
-
-                if (ShouldGenerateClassNativeField(@class))
+                if (Options.Gnu99Mode)
                 {
-                    PushBlock(CSharpBlockKind.Field);
-                    WriteLine("public global::System.IntPtr {0} {{ get; {1} set; }}",
-                        Helpers.InstanceIdentifier, @class.IsValueType ? "private" : "protected");
-                    PopBlock(NewLineKind.BeforeNextBlock);
-                }
+                    GenerateStructInternals(@class);
 
-                if (Options.GenerateClassMarshals)
+                    GenerateDeclContext(@class);
+                }
+                else
                 {
-                    GenerateClassMarshals(@class);
+                    GenerateClassInternals(@class);
+                    GenerateDeclContext(@class);
+
+                    if (@class.Ignore || @class.IsDependent)
+                        goto exit;
+
+                    if (ShouldGenerateClassNativeField(@class))
+                    {
+                        PushBlock(CSharpBlockKind.Field);
+                        WriteLine("public global::System.IntPtr {0} {{ get; {1} set; }}",
+                            Helpers.InstanceIdentifier, @class.IsValueType ? "private" : "protected");
+                        PopBlock(NewLineKind.BeforeNextBlock);
+                    }
+
+                    if (Options.GenerateClassMarshals)
+                    {
+                        GenerateClassMarshals(@class);
+                    }
+
+                    GenerateClassConstructors(@class);
+
+                    if (@class.IsUnion)
+                        GenerateUnionFields(@class);
+
+                    GenerateClassMethods(@class);
+                    GenerateClassVariables(@class);
+                    GenerateClassProperties(@class);
+
+                    if (Options.GenerateVirtualTables && @class.IsDynamic)
+                        GenerateVTable(@class);
                 }
-
-                GenerateClassConstructors(@class);
-
-                if (@class.IsUnion)
-                    GenerateUnionFields(@class);
-
-                GenerateClassMethods(@class);
-                GenerateClassVariables(@class);
-                GenerateClassProperties(@class);
-
-                if (Options.GenerateVirtualTables && @class.IsDynamic)
-                    GenerateVTable(@class);
             }
         exit:
             WriteCloseBraceIndent();
@@ -471,6 +472,24 @@ namespace CppSharp.Generators.CSharp
             }
         }
 
+
+        public void GenerateStructInternals(Class @class)
+        {
+            var typePrinter = TypePrinter as CSharpTypePrinter;
+            typePrinter.PushContext(CSharpTypePrinterContextKind.Native);
+
+            GenerateClassFields(@class, GenerateClassInternalsField, true);
+
+            var functions = GatherClassInternalFunctions(@class);
+
+            foreach (var function in functions)
+            {
+                GenerateInternalFunction(function);
+            }
+
+            typePrinter.PopContext();
+        }
+
         public void GenerateClassInternals(Class @class)
         {
             PushBlock(CSharpBlockKind.InternalsClass);
@@ -487,13 +506,37 @@ namespace CppSharp.Generators.CSharp
             if (Options.GenerateVirtualTables && @class.IsDynamic)
                 GenerateVTablePointers(@class);
 
-            var functions = GatherClassInternalFunctions(@class);
-
-            foreach (var function in functions)
+            switch (@class.Type)
             {
-                GenerateInternalFunction(function);
-            }
+                case ClassType.Interface:
+                case ClassType.ValueType:
+                {
+                    var functions = GatherClassInternalFunctions(@class);
 
+                    foreach (var function in functions)
+                    {
+                        GenerateInternalFunction(function);
+                    }
+                    
+                }
+                    break;
+                case ClassType.RefType:
+                {
+                    if (@class.IsRefType)
+                    {
+                        var functions = GatherClassInternalFunctions(@class);
+
+                        foreach (var function in functions)
+                        {
+                            GenerateInternalFunction(function);
+                        }
+                    }
+                }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+           
             typePrinter.PopContext();
 
             WriteCloseBraceIndent();
@@ -732,7 +775,7 @@ namespace CppSharp.Generators.CSharp
 
         public void GenerateClassProlog(Class @class)
         {
-            if (@class.IsUnion)
+            if (@class.IsUnion || @class.IsValueType)
                 WriteLine("[StructLayout(LayoutKind.Explicit)]");
 
             Write(@class.Ignore ? "internal " : Helpers.GetAccess(@class.Access));
@@ -2642,7 +2685,7 @@ namespace CppSharp.Generators.CSharp
                 .ToList();
             var index = overloads.IndexOf(function);
 
-            if (index >= 0)
+            if (index > 0)
                 identifier += "_" + index.ToString(CultureInfo.InvariantCulture);
 
             return identifier;
@@ -2657,6 +2700,7 @@ namespace CppSharp.Generators.CSharp
                 function = function.OriginalFunction;
 
             PushBlock(CSharpBlockKind.InternalsClassMethod);
+            GenerateDeclarationCommon(function);
             WriteLine("[SuppressUnmanagedCodeSecurity]");
 
             string libName = Options.SharedLibraryName;

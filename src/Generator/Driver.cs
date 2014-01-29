@@ -253,7 +253,13 @@ namespace CppSharp
             TranslationUnitPasses.AddPass(new CleanUnitPass(Options));
             TranslationUnitPasses.AddPass(new SortDeclarationsPass());
             TranslationUnitPasses.AddPass(new ResolveIncompleteDeclsPass());
-            TranslationUnitPasses.AddPass(new CheckIgnoredDeclsPass());
+            
+            // skip when Gnu99Mode
+            // we want to include all declarations, in order for the generated struct to be complete
+            if (!Options.Gnu99Mode)
+            {
+                TranslationUnitPasses.AddPass(new CheckIgnoredDeclsPass());
+            }
 
             if (Options.IsCSharpGenerator)
                 TranslationUnitPasses.AddPass(new GenerateInlinesCodePass());
@@ -261,18 +267,30 @@ namespace CppSharp
             library.SetupPasses(this);
 
             TranslationUnitPasses.AddPass(new FindSymbolsPass());
-            TranslationUnitPasses.AddPass(new CheckStaticClass());
-            TranslationUnitPasses.AddPass(new MoveOperatorToClassPass());
-            TranslationUnitPasses.AddPass(new MoveFunctionToClassPass());
+            // skip when Gnu99Mode
+            if (!Options.Gnu99Mode)
+            {
+                TranslationUnitPasses.AddPass(new CheckStaticClass());
+                TranslationUnitPasses.AddPass(new MoveOperatorToClassPass());
+                TranslationUnitPasses.AddPass(new MoveFunctionToClassPass());
+            }
             TranslationUnitPasses.AddPass(new CheckAmbiguousFunctions());
             TranslationUnitPasses.AddPass(new CheckOperatorsOverloadsPass());
             TranslationUnitPasses.AddPass(new CheckVirtualOverrideReturnCovariance());
 
             Generator.SetupPasses();
-
-            TranslationUnitPasses.AddPass(new FieldToPropertyPass());
+            
+            // skip when Gnu99Mode
+            if (!Options.Gnu99Mode)
+            {
+                TranslationUnitPasses.AddPass(new FieldToPropertyPass());
+            }
             TranslationUnitPasses.AddPass(new CleanInvalidDeclNamesPass());
-            TranslationUnitPasses.AddPass(new CheckIgnoredDeclsPass());
+            // skip when Gnu99Mode
+            if (!Options.Gnu99Mode)
+            {
+                TranslationUnitPasses.AddPass(new CheckIgnoredDeclsPass());
+            }
             TranslationUnitPasses.AddPass(new CheckFlagEnumsPass());
             TranslationUnitPasses.AddPass(new CheckDuplicatedNamesPass());
 
