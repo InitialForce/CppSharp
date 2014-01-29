@@ -251,6 +251,12 @@ namespace CppSharp
         { 
             TranslationUnitPasses.AddPass(new CleanUnitPass(Options));
             TranslationUnitPasses.AddPass(new SortDeclarationsPass());
+
+            if (Options.Gnu99Mode && Options.IsCSharpGenerator)
+            {
+                TranslationUnitPasses.AddPass(new UnwrapUnsupportedArraysPass());
+            }
+
             TranslationUnitPasses.AddPass(new ResolveIncompleteDeclsPass());
             TranslationUnitPasses.AddPass(new CheckIgnoredDeclsPass());
 

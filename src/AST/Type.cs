@@ -84,6 +84,14 @@ namespace CppSharp.AST
             return ptr.Pointee.IsPrimitiveType(out primitiveType);
         }
 
+        public bool IsPointerToArrayType()
+        {
+            var ptr = this as PointerType;
+            if (ptr == null)
+                return false;
+            return ptr.Pointee is ArrayType;
+        }
+
         public bool IsPointerToPrimitiveType(out PrimitiveType primitive)
         {
             var ptr = this as PointerType;
