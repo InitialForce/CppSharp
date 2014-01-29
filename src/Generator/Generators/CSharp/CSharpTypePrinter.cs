@@ -416,7 +416,7 @@ namespace CppSharp.Generators.CSharp
         public CSharpTypePrinterResult VisitClassDecl(Class @class)
         {
             if (ContextKind == CSharpTypePrinterContextKind.Native)
-                return string.Format("{0}.Internal",
+                return string.Format("{0}",
                     GetNestedQualifiedName(@class.OriginalClass ?? @class));
 
             return GetNestedQualifiedName(@class);
