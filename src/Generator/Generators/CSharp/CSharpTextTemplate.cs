@@ -806,6 +806,11 @@ namespace CppSharp.Generators.CSharp
 
             PushBlock(CSharpBlockKind.Field);
 
+            if (Options.Gnu99Mode)
+            {
+                GenerateDeclarationCommon(field);
+            }
+
             WriteLine("[FieldOffset({0})]", field.OffsetInBytes);
 
             var fieldTypePrinted = field.QualifiedType.CSharpType(TypePrinter);
