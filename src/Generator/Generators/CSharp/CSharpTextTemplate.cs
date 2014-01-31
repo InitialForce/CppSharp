@@ -302,19 +302,29 @@ namespace CppSharp.Generators.CSharp
 
             PushBlock(BlockKind.BlockComment);
             WriteLine("/// <summary>");
-            foreach (string line in HtmlEncoder.HtmlEncode(comment.BriefText).Split(
-                                        Environment.NewLine.ToCharArray()))
-                WriteLine("/// <para>{0}</para>", line);
+            var lines = comment.Text.Replace("\r\n", "\n").Split('\n').ToList();
+
+            // remove first line
+            if (lines.Any() && lines.First().Trim() == "/**")
+                lines = lines.Skip(1).ToList();
+
+            // remove last line
+            if (lines.Any() && lines.Last().Trim() == "*/")
+                lines = lines.Take(lines.Count -1).ToList();
+
+            var trimChars = new[]
+            {
+                '/', '*', ' ', '<'
+            };
+            var strippedLines = lines.Select(a => a.TrimStart(trimChars).TrimEnd(trimChars)).ToList();
+
+            foreach (var line in strippedLines)
+            {
+                WriteLine("/// " + line);
+            }
+            
             WriteLine("/// </summary>");
 
-            if (!string.IsNullOrWhiteSpace(comment.Text))
-            {
-                WriteLine("/// <remarks>");
-                foreach (string line in HtmlEncoder.HtmlEncode(comment.Text).Split(
-                                            Environment.NewLine.ToCharArray()))
-                    WriteLine("/// <para>{0}</para>", line);
-                WriteLine("/// </remarks>");
-            }
             PopBlock();
         }
 
