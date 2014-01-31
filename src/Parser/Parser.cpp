@@ -1465,7 +1465,8 @@ CppSharp::AST::Type^ Parser::WalkType(clang::QualType QualType, clang::TypeLoc* 
         if (TL && !TL->isNull())
         {
             FTL = TL->getAs<FunctionProtoTypeLoc>();
-            RL = FTL.getReturnLoc();
+            if (FTL)
+                RL = FTL.getReturnLoc();
         }
 
         auto F = gcnew CppSharp::AST::FunctionType();
