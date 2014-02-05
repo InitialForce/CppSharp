@@ -492,6 +492,7 @@ namespace CppSharp.Generators.CSharp
         public void GenerateClassInternals(Class @class)
         {
             PushBlock(CSharpBlockKind.InternalsClass);
+
             WriteLine("[StructLayout(LayoutKind.Explicit, Size = {0})]",
                 @class.Layout.Size);
 
@@ -775,7 +776,11 @@ namespace CppSharp.Generators.CSharp
         public void GenerateClassProlog(Class @class)
         {
             if (@class.IsUnion || @class.IsValueType)
-                WriteLine("[StructLayout(LayoutKind.Explicit)]");
+            {
+                // TODO: create option for this
+                WriteLine("[StructLayout(LayoutKind.Sequential)]");
+//                WriteLine("[StructLayout(LayoutKind.Explicit)]");
+            }
 
             Write(@class.Ignore ? "internal " : Helpers.GetAccess(@class.Access));
             Write("unsafe ");
@@ -854,7 +859,8 @@ namespace CppSharp.Generators.CSharp
                 GenerateDeclarationCommon(field);
             }
 
-            WriteLine("[FieldOffset({0})]", field.OffsetInBytes);
+            // TODO: create option for this
+//            WriteLine("[FieldOffset({0})]", field.OffsetInBytes);
 
             var fieldTypePrinted = field.QualifiedType.CSharpType(TypePrinter);
 
