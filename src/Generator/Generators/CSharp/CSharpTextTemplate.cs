@@ -2773,9 +2773,14 @@ namespace CppSharp.Generators.CSharp
                     @params.Add("int " + GeneratedIdentifier("forBases"));
             }
 
-            WriteLine("internal static extern {0} {1}({2});", retType,
+            // TODO: add option for this
+            WriteLine("public static extern {0} {1}({2});", retType,
                       GetFunctionNativeIdentifier(function),
                       string.Join(", ", @params));
+//            WriteLine("internal static extern {0} {1}({2});", retType,
+//                      GetFunctionNativeIdentifier(function),
+//                      string.Join(", ", @params));
+
             PopBlock(NewLineKind.BeforeNextBlock);
 
             typePrinter.PopContext();
