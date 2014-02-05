@@ -35,9 +35,14 @@ namespace CppSharp.Passes
             // types with empty names are assumed to be private
             if (decl is Class && string.IsNullOrWhiteSpace(decl.Name))
             {
-                decl.Name = "_";
-                decl.ExplicityIgnored = true;
-                return false;
+                decl.Name = CheckName(decl.Namespace + "_anon");
+
+                StringHelpers.CleanupText(ref decl.DebugText);
+                return base.VisitDeclaration(decl);
+
+                // TODO: make option for this
+//                decl.ExplicityIgnored = true;
+//                return false;
             }
 
             Function function = decl as Function;
