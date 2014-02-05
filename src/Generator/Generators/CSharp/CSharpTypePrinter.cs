@@ -239,7 +239,9 @@ namespace CppSharp.Generators.CSharp
             if ((desugared.IsDependent || desugared.IsTagDecl(out @class))
                 && ContextKind == CSharpTypePrinterContextKind.Native)
             {
-                return "global::System.IntPtr";
+                return pointee.Visit(this, quals) + "*";
+                //TODO: add option for this
+//                return "global::System.IntPtr";
             }
 
             return pointee.Visit(this, quals);
