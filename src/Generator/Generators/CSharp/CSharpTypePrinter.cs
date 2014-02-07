@@ -203,8 +203,11 @@ namespace CppSharp.Generators.CSharp
 
             var isManagedContext = ContextKind == CSharpTypePrinterContextKind.Managed;
 
-            if (IsConstCharString(pointer))
-                return isManagedContext ? "string" : "global::System.IntPtr";
+            // TODO: make option for this
+//            if (IsConstCharString(pointer))
+//            {
+//                return isManagedContext ? "string" : "global::System.IntPtr";
+//            }
 
             PrimitiveType primitive;
             var desugared = pointee.Desugar();
