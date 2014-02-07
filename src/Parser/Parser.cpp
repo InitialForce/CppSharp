@@ -1618,6 +1618,27 @@ CppSharp::AST::Type^ Parser::WalkType(clang::QualType QualType, clang::TypeLoc* 
         Ty = F;
         break;
     }
+    case Type::FunctionNoProto:
+    {
+        auto FP = Type->getAs<clang::FunctionNoProtoType>();
+
+        FunctionNoProtoTypeLoc FTL;
+        TypeLoc RL;
+        if (TL && !TL->isNull())
+        {
+            FTL = TL->getAs<FunctionNoProtoTypeLoc>();
+            if (FTL)
+                RL = FTL.getReturnLoc();
+        }
+
+        auto F = gcnew CppSharp::AST::FunctionType();
+        F->ReturnType = GetQualifiedType(FP->getReturnType(),
+            WalkType(FP->getReturnType(), &RL));
+        F->CallingConvention = ConvertCallConv(FP->getCallConv());
+
+        Ty = F;
+        break;
+    }
     case Type::TypeOf:
     {
         auto TO = Type->getAs<clang::TypeOfType>();
