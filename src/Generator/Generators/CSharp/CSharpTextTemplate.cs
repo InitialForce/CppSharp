@@ -811,8 +811,9 @@ namespace CppSharp.Generators.CSharp
 
             if (!@class.Ignore)
             {
-                if (@class.IsRefType)
-                    bases.Add("IDisposable");
+            // TODO: make option for this
+//            if (@class.IsRefType)
+//                bases.Add("IDisposable");
 
                 if (Options.GenerateClassMarshals)
                 {
