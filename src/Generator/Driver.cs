@@ -28,7 +28,7 @@ namespace CppSharp
         public TypeMapDatabase TypeDatabase { get; private set; }
         public PassBuilder<TranslationUnitPass> TranslationUnitPasses { get; private set; }
         public PassBuilder<GeneratorOutputPass> GeneratorOutputPasses { get; private set; }
-        public Generator Generator { get; private set; }
+        public Generators.Generator Generator { get; private set; }
 
         public ASTContext ASTContext { get; private set; }
         public SymbolContext Symbols { get; private set; }
@@ -45,7 +45,7 @@ namespace CppSharp
             GeneratorOutputPasses = new PassBuilder<GeneratorOutputPass>(this);
         }
 
-        Generator CreateGeneratorFromKind(GeneratorKind kind)
+        Generators.Generator CreateGeneratorFromKind(GeneratorKind kind)
         {
             switch (kind)
             {

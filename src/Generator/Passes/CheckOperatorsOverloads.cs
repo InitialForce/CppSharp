@@ -78,7 +78,7 @@ namespace CppSharp.Passes
 
                     @operator.Parameters.Insert(0, new Parameter
                     {
-                        Name = Generator.GeneratedIdentifier("op"),
+                        Name = Generators.Generator.GeneratedIdentifier("op"),
                         QualifiedType = new QualifiedType(type),
                         Kind = ParameterKind.OperatorParameter
                     });
