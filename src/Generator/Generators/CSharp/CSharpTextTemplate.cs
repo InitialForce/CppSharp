@@ -339,6 +339,9 @@ namespace CppSharp.Generators.CSharp
             //if (@class.IsIncomplete)
             //    return;
 
+            if (@class.CompleteDeclaration != null)
+                return;
+
             PushBlock(CSharpBlockKind.Class);
             GenerateDeclarationCommon(@class);
 
