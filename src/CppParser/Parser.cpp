@@ -554,7 +554,7 @@ Class* Parser::WalkRecordCXX(clang::CXXRecordDecl* Record)
     Class* RC = nullptr;
 
     auto Name = GetTagDeclName(Record);
-    auto HasEmptyName = Record->getDeclName().isEmpty();
+    auto HasEmptyName = Name.empty();
 
     if (HasEmptyName)
     {
@@ -708,7 +708,7 @@ Class* Parser::WalkRecord(clang::RecordDecl* Record)
     Class* RC = nullptr;
 
     auto Name = GetTagDeclName(Record);
-    auto HasEmptyName = Record->getDeclName().isEmpty();
+    auto HasEmptyName = Name.empty();
 
     if (HasEmptyName)
     {

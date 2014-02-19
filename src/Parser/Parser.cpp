@@ -556,7 +556,7 @@ CppSharp::AST::Class^ Parser::WalkRecordCXX(clang::CXXRecordDecl* Record)
     CppSharp::AST::Class^ RC = nullptr;
 
     auto Name = marshalString<E_UTF8>(GetTagDeclName(Record));
-    auto HasEmptyName = Record->getDeclName().isEmpty();
+    auto HasEmptyName = System::String::IsNullOrWhiteSpace(Name);
 
     if (HasEmptyName)
     {
@@ -772,7 +772,7 @@ CppSharp::AST::Class^ Parser::WalkRecord(clang::RecordDecl* Record)
     CppSharp::AST::Class^ RC = nullptr;
 
     auto Name = marshalString<E_UTF8>(GetTagDeclName(Record));
-    auto HasEmptyName = Record->getDeclName().isEmpty();
+    auto HasEmptyName = System::String::IsNullOrWhiteSpace(Name);
 
     if (HasEmptyName)
     {
