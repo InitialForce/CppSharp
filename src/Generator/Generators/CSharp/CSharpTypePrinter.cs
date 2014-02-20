@@ -218,6 +218,21 @@ namespace CppSharp.Generators.CSharp
 
                 return VisitPrimitiveType(primitive, quals) + "*";
             }
+            else if (desugared.IsPointerToPrimitiveType(out primitive))
+            {
+                if (isManagedContext && Context.Parameter != null &&
+                    (Context.Parameter.IsOut || Context.Parameter.IsInOut))
+                    return "global::System.IntPtr";
+
+                if (ContextKind == CSharpTypePrinterContextKind.GenericDelegate)
+                    return "global::System.IntPtr";
+
+                return VisitPrimitiveType(primitive, quals) + "**";
+            }
+            else if (desugared.IsPointer() && Context.Parameter != null)
+            {
+                return pointee.Visit(this, quals) + "*";
+            }
 
             Class @class;
             if ((desugared.IsDependent || desugared.IsTagDecl(out @class))
