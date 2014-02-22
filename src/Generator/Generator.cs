@@ -62,7 +62,8 @@ namespace CppSharp.Generators
         /// <summary>
         /// Generates the outputs.
         /// </summary>
-        public virtual List<GeneratorOutput> Generate()
+        /// <param name="ignore"></param>
+        public virtual List<GeneratorOutput> Generate(List<TranslationUnit> ignore = null)
         {
             var outputs = new List<GeneratorOutput>();
 
@@ -72,6 +73,9 @@ namespace CppSharp.Generators
                     continue;
 
                 if (unit.IsSystemHeader)
+                    continue;
+
+                if (ignore.Contains(unit))
                     continue;
 
                 var templates = Generate(unit);
