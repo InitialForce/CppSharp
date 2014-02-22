@@ -305,6 +305,48 @@ namespace CppSharp.AST
         }
 
         public bool IsRoot { get { return Namespace == null; } }
+
+        public T FindPreProcessedEntity<T>(string name,
+            StringComparison stringComparison = StringComparison.Ordinal) where T : PreprocessedEntity
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+
+            return (T)PreprocessedEntities.Find(e => e is T && e.Name.Equals(name, stringComparison));
+        }
+
+        public T FindPreProcessedEntity<T>(string name, bool createDecl = false) where T : PreprocessedEntity, new()
+        {
+            T pp = FindPreProcessedEntity<T>(name, StringComparison.Ordinal);
+
+            if (pp == null && createDecl)
+            {
+                pp = CreatePreProcessedEntity<T>(name);
+                PreprocessedEntities.Add(pp);
+            }
+
+            return pp;
+        }
+
+        T CreatePreProcessedEntity<T>(string name) where T: PreprocessedEntity, new()
+        {
+            var @class = new T
+            {
+                Name = name,
+                Namespace = this,
+            };
+
+            return @class;
+        }
+
+        public MacroDefinition FindMacroDefinition(string name, bool createDecl = false)
+        {
+            return FindPreProcessedEntity<MacroDefinition>(name, createDecl);
+        }
+
+        public MacroExpansion FindMacroExpansion(string name, bool createDecl = false)
+        {
+            return FindPreProcessedEntity<MacroExpansion>(name, createDecl);
+        }
     }
 
     /// <summary>

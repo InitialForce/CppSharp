@@ -233,13 +233,13 @@ namespace CppSharp.Generators.CSharp
 
                 return VisitPrimitiveType(primitive, quals) + "**";
             }
-            else if (desugared.IsPointer() && Context.Parameter != null)
+            else if (desugared.IsPointer())
             {
                 return pointee.Visit(this, quals) + "*";
             }
 
             Class @class;
-            if ((desugared.IsDependent || desugared.IsTagDecl(out @class))
+            if ((desugared.IsDependent || desugared.IsTagDecl(out @class) || desugared.IsEnumType())
                 && ContextKind == CSharpTypePrinterContextKind.Native)
             {
                 return pointee.Visit(this, quals) + "*";
