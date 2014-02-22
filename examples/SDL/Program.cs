@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using CppSharp.AST;
 using CppSharp.Generators;
 using CppSharp.Passes;
@@ -15,7 +13,7 @@ namespace CppSharp
     {
         public static void Main(string[] args)
         {
-//            Generate(new WinApi());
+//            GenerateLibrary(new WinApi());
 //            Environment.Exit(0);
 
             GenerateFFmpeg();
@@ -24,47 +22,101 @@ namespace CppSharp
         private static void GenerateFFmpeg()
         {
 //            var versionString = "2.1.3";
-            var versionString = "1.0.7";
+            string versionString = "1.0.7";
             var ffmpegInstallDir = new DirectoryInfo(@"C:\WORK\REPOS-SC\FFmpeg_bindings\ffmpeg\" + versionString);
             var outputDir = new DirectoryInfo(@"C:\WORK\REPOS-SC\FFmpeg_bindings\src\" + versionString);
 
             var avutilLib = new FFmpegSubLibrary(ffmpegInstallDir, "avutil", "avutil-if-52.dll", outputDir);
-            var avutilDriver = Generate(avutilLib);
-            var avcodecLib = new FFmpegSubLibrary(ffmpegInstallDir, "avcodec", "avcodec-if-55.dll", outputDir, new List<string>
-            {
-                "old_codec_ids.h",
-                "dxva2.h",
-                "vda.h",
-                "vdpau.h",
-                "xvmc.h"
-            }, avutilDriver);
-            var avcodecDriver = Generate(avcodecLib);
+            var avcodecLib = new FFmpegSubLibrary(ffmpegInstallDir, "avcodec", "avcodec-if-55.dll", outputDir,
+                new List<string>
+                {
+                    "old_codec_ids.h",
+                    "dxva2.h",
+                    "vda.h",
+                    "vdpau.h",
+                    "xvmc.h"
+                }, new List<IComplexLibrary> {avutilLib});
 
             var avformatLib = new FFmpegSubLibrary(ffmpegInstallDir, "avformat", "avformat-if-55.dll", outputDir, null,
-                avutilDriver, avcodecDriver);
-            var avformatDriver = Generate(avformatLib);
+                new List<IComplexLibrary> {avutilLib, avcodecLib});
 
             var swresampleLib = new FFmpegSubLibrary(ffmpegInstallDir, "swresample", "swresample-if-0.dll", outputDir,
-                null, avutilDriver);
-            var swresampleDriver = Generate(swresampleLib);
+                null, new List<IComplexLibrary> {avutilLib});
 
             var swscaleLib = new FFmpegSubLibrary(ffmpegInstallDir, "swscale", "swscale-if-2.dll", outputDir, null,
-                avutilDriver);
-            var swscaleDriver = Generate(swscaleLib);
+                new List<IComplexLibrary> {avutilLib});
 
             var avfilterLib = new FFmpegSubLibrary(ffmpegInstallDir, "avfilter", "avfilter-if-3.dll", outputDir, null,
-                avutilDriver, swresampleDriver, swscaleDriver, avcodecDriver, avformatDriver);
-            var avfilterDriver = Generate(avfilterLib);
+                new List<IComplexLibrary> {avutilLib, swresampleLib, swscaleLib, avcodecLib, avformatLib});
 
             var avdeviceLib = new FFmpegSubLibrary(ffmpegInstallDir, "avdevice", "avdevice-if-55.dll", outputDir);
-            var avdeviceDriver = Generate(avdeviceLib);
+
+            GenerateComplexLibraries(new List<IComplexLibrary>
+            {
+                avcodecLib,
+                avformatLib,
+                swresampleLib,
+                swscaleLib,
+                avfilterLib,
+                avdeviceLib,
+                avutilLib,
+            });
         }
 
-        /// <summary>
-        ///     Some of the code from ConsoleDriver.Run
-        /// </summary>
-        /// <param name="library"></param>
-        private static Driver Generate(ILibrary library)
+        private static void GenerateComplexLibraries(IList<IComplexLibrary> complexLibraries)
+        {
+            var log = new TextDiagnosticPrinter();
+
+            // sort topoligically (by dependencies)
+            IEnumerable<IComplexLibrary> sorted = complexLibraries.TSort(l => l.DependentLibraries);
+            var drivers = new List<S>();
+
+            log.EmitMessage("Parsing libraries...");
+            foreach (IComplexLibrary lib in sorted)
+            {
+                List<Driver> dependents = drivers.Select(s => s.Driver).ToList();
+                drivers.Add(new S
+                {
+                    Library = lib,
+                    Driver = GenerateLibrary(log, lib, dependents),
+                    Dependents = dependents,
+                });
+            }
+
+            log.EmitMessage("Postprocess ...");
+            var generated = new List<TranslationUnit>();
+            foreach (S s in drivers)
+            {
+                IComplexLibrary library = s.Library;
+                Driver driver = s.Driver;
+
+                library.Postprocess(driver, driver.ASTContext, s.Dependents.Select(d => d.ASTContext));
+            }
+
+            log.EmitMessage("Generating ...");
+            foreach (S s in drivers)
+            {
+                Driver driver = s.Driver;
+
+                List<GeneratorOutput> outputs = driver.GenerateCode(generated);
+
+                foreach (GeneratorOutput output in outputs)
+                {
+                    foreach (GeneratorOutputPass pass in driver.GeneratorOutputPasses.Passes)
+                    {
+                        pass.Driver = driver;
+                        pass.VisitGeneratorOutput(output);
+                    }
+                }
+
+                driver.WriteCode(outputs);
+
+                generated.AddRange(outputs.Select(t => t.TranslationUnit));
+            }
+        }
+
+        private static Driver GenerateLibrary(TextDiagnosticPrinter log, IComplexLibrary library,
+            IList<Driver> dependentLibraries)
         {
             var options = new DriverOptions
             {
@@ -74,15 +126,21 @@ namespace CppSharp
                 Verbose = false,
             };
 
-            var log = new TextDiagnosticPrinter();
             var driver = new Driver(options, log);
             log.Verbose = driver.Options.Verbose;
 
             library.Setup(driver);
             driver.Setup();
 
-            if (!options.Quiet)
-                log.EmitMessage("Parsing libraries...");
+            foreach (Driver dependentLibDriver in dependentLibraries)
+            {
+                foreach (TranslationUnit tu in dependentLibDriver.ASTContext.TranslationUnits)
+                {
+                    driver.ASTContext.TranslationUnits.Add(tu);
+                }
+            }
+
+            log.EmitMessage("Parsing libraries...");
 
             if (!driver.ParseLibraries())
                 return driver;
@@ -101,34 +159,56 @@ namespace CppSharp
             if (!options.Quiet)
                 log.EmitMessage("Processing code...");
 
-            library.Preprocess(driver, driver.ASTContext);
+//            driver.ASTContext.ResolveUnifyIncompleteClassDeclarationsFromSubLibs(dependentLibraries);
+
+            library.Preprocess(driver, driver.ASTContext, dependentLibraries.Select(d => d.ASTContext));
 
             driver.SetupPasses(library);
 
             driver.ProcessCode();
-            library.Postprocess(driver, driver.ASTContext);
-
-            if (!options.Quiet)
-                log.EmitMessage("Generating code...");
-
-            List<GeneratorOutput> outputs = driver.GenerateCode();
-
-            foreach (GeneratorOutput output in outputs)
-            {
-                foreach (GeneratorOutputPass pass in driver.GeneratorOutputPasses.Passes)
-                {
-                    pass.Driver = driver;
-                    pass.VisitGeneratorOutput(output);
-                }
-            }
-
-            driver.WriteCode(outputs);
-            if (driver.Options.IsCSharpGenerator)
-                driver.CompileCode();
-
-            //            ConsoleDriver.Run(library);
 
             return driver;
+        }
+
+        private struct S
+        {
+            public Driver Driver { get; set; }
+            public List<Driver> Dependents { get; set; }
+            public IComplexLibrary Library { get; set; }
+        }
+    }
+
+    internal static class TopologicalSort
+    {
+        /// <summary>
+        ///     Topological sort (least dependent first)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dependencies"></param>
+        /// <returns></returns>
+        public static IEnumerable<T> TSort<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> dependencies)
+        {
+            var sorted = new List<T>();
+            var visited = new HashSet<T>();
+
+            foreach (T item in source)
+                Visit(item, visited, sorted, dependencies);
+
+            return sorted;
+        }
+
+        private static void Visit<T>(T item, HashSet<T> visited, List<T> sorted,
+            Func<T, IEnumerable<T>> dependencies)
+        {
+            if (visited.Contains(item)) return;
+
+            visited.Add(item);
+
+            foreach (T dep in dependencies(item))
+                Visit(dep, visited, sorted, dependencies);
+
+            sorted.Add(item);
         }
     }
 }

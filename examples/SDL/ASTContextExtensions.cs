@@ -188,5 +188,58 @@ namespace CppSharp
                 }
             }
         }
+//        private static IEnumerable<Class> CollectClasses(Class c)
+//        {
+//            if (c.Classes.Any())
+//                return Enumerable.Empty
+//
+//            return c.Classes.Aggregate(Enumerable.Empty<Class>(), (l, u) =>
+//            {
+//                if(c.Classes.Any())
+//                    return l.Concat(CollectClasses(c));
+//
+//                return l;
+//            });
+//        }
+//
+//        private static IEnumerable<Class> CollectClasses(TranslationUnit 
+//            tu)
+//        {
+//            return tu.Classes.Aggregate(Enumerable.Empty<Class>(), (l, c) => l.Concat(CollectClasses(c)));
+//        }
+//        
+//        public static void ResolveUnifyIncompleteClassDeclarationsFromSubLibs(this ASTContext context, IEnumerable<Driver> dependentLibraryDrivers)
+//        {
+//            // get all classes across all units
+//            var allClasses = context.TranslationUnits.Aggregate(Enumerable.Empty<Class>(),
+//                (l, tu) => l.Concat(CollectClasses(tu)));
+//
+//            // group classes by name, select only duplicates
+//            var duplicates = allClasses.GroupBy(c => c.Name);
+//
+//            foreach (var group in duplicates)
+//            {
+//                if (@group.All(c => c.IsIncomplete || !c.IsGenerated))
+//                {
+//                    foreach (var dependentLibraryDriver in dependentLibraryDrivers)
+//                    {
+//                        var depLibClasses =
+//                            dependentLibraryDriver.ASTContext.FindClass(@group.Key);
+//                        var matchClasses = depLibClasses.Where(c => c.Name == @group.Key);
+//                        if (matchClasses.Any())
+//                        {
+//                            if (@group.Key == "AVClass")
+//                                Debugger.Break();
+//
+//                            // we found a complete class in a sublibrary, let's not generate this class ourselves..
+//                            foreach (var @class in group)
+//                            {
+//                                @class.IsGenerated = false;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 }

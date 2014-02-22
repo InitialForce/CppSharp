@@ -325,9 +325,9 @@ namespace CppSharp
             Generator.Process();
         }
 
-        public List<GeneratorOutput> GenerateCode()
+        public List<GeneratorOutput> GenerateCode(List<TranslationUnit> ignore = null)
         {
-            return Generator.Generate();
+            return Generator.Generate(ignore);
         }
 
         public void WriteCode(List<GeneratorOutput> outputs)

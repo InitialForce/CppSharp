@@ -7,12 +7,12 @@ namespace CppSharp
 {
     internal class WinApi : ILibrary
     {
-        public void Preprocess(Driver driver, ASTContext ctx)
+        public void Preprocess(Driver driver, ASTContext ctx, IEnumerable<ASTContext> dependentContexts = null)
         {
             ctx.IgnoreFunctionsWithParameterTypeName("va_list");
         }
 
-        public void Postprocess(Driver driver, ASTContext lib)
+        public void Postprocess(Driver driver, ASTContext lib, IEnumerable<ASTContext> dependentContexts = null)
         {
         }
 

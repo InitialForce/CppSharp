@@ -6,21 +6,24 @@ using System.IO;
 using System.Linq;
 using CppSharp;
 using CppSharp.AST;
-using Type = CppSharp.AST.Type;
 
 namespace FFmpegBindings
 {
-    internal class FFmpegSubLibrary : ILibrary
+    public interface IComplexLibrary : ILibrary
+    {
+        IEnumerable<IComplexLibrary> DependentLibraries { get; }
+        string OutputNamespace { get; }
+    }
+
+    [DebuggerDisplay("{LibraryName}")]
+    internal class FFmpegSubLibrary : IComplexLibrary
     {
         private readonly IEnumerable<string> _filesToIgnore;
-        public string LibraryName { get; private set; }
-        public string DllName { get; private set; }
-        private readonly DirectoryInfo _outputDir;
-        private readonly Driver[] _dependentLibDrivers;
         private readonly DirectoryInfo _includeDir;
-        public string LibraryNameSpace { get; private set; }
+        private readonly DirectoryInfo _outputDir;
 
-        public FFmpegSubLibrary(DirectoryInfo includeDir, string libraryName, string dllName, DirectoryInfo outputDir, IEnumerable<string> filesToIgnore = null, params Driver[] dependentLibDrivers)
+        public FFmpegSubLibrary(DirectoryInfo includeDir, string libraryName, string dllName, DirectoryInfo outputDir,
+            IEnumerable<string> filesToIgnore = null, IEnumerable<IComplexLibrary> dependentLibraries = null)
         {
             _includeDir = includeDir;
             if (!_includeDir.Exists)
@@ -31,35 +34,42 @@ namespace FFmpegBindings
             DllName = dllName;
 
             _outputDir = outputDir;
-            _dependentLibDrivers = dependentLibDrivers;
+            DependentLibraries = dependentLibraries ?? Enumerable.Empty<IComplexLibrary>();
             _filesToIgnore = filesToIgnore ?? Enumerable.Empty<string>();
+            OutputNamespace = "ffmpeg";
         }
 
-        public virtual void Preprocess(Driver driver, ASTContext ctx)
+        public string LibraryName { get; private set; }
+        public string DllName { get; private set; }
+        public string LibraryNameSpace { get; private set; }
+        public IEnumerable<IComplexLibrary> DependentLibraries { get; private set; }
+        public string OutputNamespace { get; private set; }
+ 
+        public virtual void Preprocess(Driver driver, ASTContext ctx, IEnumerable<ASTContext> dependentContexts)
         {
             // ignore the other ffmpeg sublibraries (e.g. don't include avutil stuff when generating for avcodec)
-//            foreach (var dependentLibDriver in _dependentLibDrivers)
+//            foreach (var dependentLibDriver in _dependentLibraries)
 //            {
 //                foreach (var translationUnit in dependentLibDriver.ASTContext.TranslationUnits)
 //                {
-//                    ctx.TranslationUnits.Add(translationUnit);
+//                    lib.TranslationUnits.Add(translationUnit);
 //                }
 //            }
-            foreach (DirectoryInfo subLibDir in _includeDir.GetDirectories())
-            {
-                if (subLibDir.Name.Contains(LibraryName))
-                    continue;
-
-                foreach (FileInfo headerFile in subLibDir.GetFiles())
-                {
-                    foreach (
-                        TranslationUnit unit in ctx.TranslationUnits.FindAll(m => m.FilePath == headerFile.FullName))
-                    {
-                        unit.IsGenerated = false;
-                        unit.ExplicityIgnored = true;
-                    }
-                }
-            }
+//            foreach (DirectoryInfo subLibDir in _includeDir.GetDirectories())
+//            {
+//                if (subLibDir.Name.Contains(LibraryName))
+//                    continue;
+//
+//                foreach (FileInfo headerFile in subLibDir.GetFiles())
+//                {
+//                    foreach (
+//                        TranslationUnit unit in lib.TranslationUnits.FindAll(m => m.FilePath == headerFile.FullName))
+//                    {
+//                        unit.IsGenerated = false;
+//                        unit.ExplicityIgnored = true;
+//                    }
+//                }
+//            }
 
 //          ILP32 	LP64 	LLP64 	ILP64
 //char 	    8 	    8 	    8 	    8
@@ -69,39 +79,39 @@ namespace FFmpegBindings
 //long long 64 	    64 	    64 	    64
 //size_t 	32 	    64 	    64 	    64
 //pointer 	32 	    64 	    64 	    64
-            
+
 //ptrdiff_t 	32 	64 	
 //size_t 	    32 	64 	
 //intptr_tuintptr_t, SIZE_T, SSIZE_T, INT_PTR, DWORD_PTR, etc 32 	64 
 //time_t 	    32 	64
 
+
             ctx.ConvertTypesToPortable(t => t.Declaration.Name == "size_t", PrimitiveType.UIntPtr);
             ctx.ConvertTypesToPortable(t => t.Declaration.Name == "time_t", PrimitiveType.UIntPtr);
             ctx.ConvertTypesToPortable(t => t.Declaration.Name == "ptrdiff_t", PrimitiveType.UIntPtr);
-            
+
             ctx.ChooseAndPromoteIncompleteClass();
-            ctx.ResolveUnifyIncompleteClassDeclarationsFromSubLibs(_dependentLibDrivers);
-//            ctx.ResolveUnifyIncompleteClassDeclarations();
+//            lib.ResolveUnifyIncompleteClassDeclarationsFromSubLibs(DependentLibraries);
+//            lib.ResolveUnifyIncompleteClassDeclarations();
             // it's not possible to handle va_list using p/invoke
             ctx.IgnoreFunctionsWithParameterTypeName("va_list");
-            ctx.GenerateClassWithConstValuesFromMacros(LibraryName);
         }
 
-        public virtual void Postprocess(Driver driver, ASTContext lib)
+        public virtual void Postprocess(Driver driver, ASTContext lib, IEnumerable<ASTContext> dependentContexts)
         {
-            foreach (var tu in lib.TranslationUnits)
+            var ourTranslationUnits = lib.TranslationUnits.Where(
+                o => !dependentContexts.Any(d => d.TranslationUnits.Any(t => t == o.TranslationUnit)));
+
+            lib.GenerateClassWithConstValuesFromMacros(ourTranslationUnits, LibraryNameSpace);
+            foreach (TranslationUnit tu in ourTranslationUnits)
             {
-                if (tu.Classes.Count == 1 && tu.Classes[0].Name == LibraryNameSpace)
-                    continue;
-
-                var wrappingClass = new Class()
+                var wrappingClass = tu.FindClass(LibraryNameSpace);
+                if (wrappingClass == null)
                 {
-                    Name = LibraryNameSpace,
-                    Namespace =  tu
-                };
-
-                wrappingClass.Classes.AddRange(tu.Classes);
-                foreach (var decl in wrappingClass.Classes)
+                    wrappingClass = new Class {Name = LibraryNameSpace, Namespace = tu};
+                }
+                wrappingClass.Classes.AddRange(tu.Classes.Except(new List<Class> {wrappingClass}));
+                foreach (Class decl in wrappingClass.Classes)
                 {
                     decl.Namespace = wrappingClass;
                 }
@@ -109,14 +119,14 @@ namespace FFmpegBindings
                 tu.Classes.Add(wrappingClass);
 
                 wrappingClass.Functions.AddRange(tu.Functions);
-                foreach (var decl in wrappingClass.Functions)
+                foreach (Function decl in wrappingClass.Functions)
                 {
                     decl.Namespace = wrappingClass;
                 }
                 tu.Functions.Clear();
 
                 wrappingClass.Enums.AddRange(tu.Enums);
-                foreach (var decl in wrappingClass.Enums)
+                foreach (Enumeration decl in wrappingClass.Enums)
                 {
                     decl.Namespace = wrappingClass;
                 }
@@ -140,9 +150,9 @@ namespace FFmpegBindings
                     driver.Options.Headers.Add(item);
                 }
             }
-            foreach (var dependentLibrary in _dependentLibDrivers)
+            foreach (var dependentLibrary in DependentLibraries)
             {
-                driver.Options.DependentNameSpaces.Add(dependentLibrary.Options.OutputNamespace);
+                driver.Options.DependentNameSpaces.Add(dependentLibrary.OutputNamespace);
             }
         }
 
@@ -163,66 +173,50 @@ namespace FFmpegBindings
         public static Field GenerateConstValueFromMacro(this ASTContext context,
             MacroDefinition macro)
         {
-            long val;
-            if (!ParseToNumber(macro.Expression, out val))
+            var builtinTypeExpression = PrimitiveTypeExpression.TryCreate(macro.Expression);
+            if (builtinTypeExpression == null)
                 return null;
-            var valueType = new QualifiedType(new BuiltinType(PrimitiveType.Int64))
+            var valueType = new QualifiedType(new BuiltinType(builtinTypeExpression.Type))
             {
-                Qualifiers = new TypeQualifiers() {IsConst = true}
+                Qualifiers = new TypeQualifiers {IsConst = true}
             };
             var item = new Field
             {
                 Name = macro.Name,
                 DebugText = macro.DebugText,
                 Access = AccessSpecifier.Public,
-                Value =
-                    new BuiltinValue()
-                    {
-                        BuiltinType = new BuiltinType(PrimitiveType.UInt64),
-                        Expression = macro.Expression,
-                        Value = val,
-                    },
+                Expression =
+                    builtinTypeExpression,
                 QualifiedType = valueType
             };
 
             return item;
         }
 
-        private static bool ParseToNumber(string num, out long val)
+        public static void GenerateClassWithConstValuesFromMacros(this ASTContext context, IEnumerable<TranslationUnit> ourTranslationUnits, string className)
         {
-            if (num.StartsWith("0x", StringComparison.CurrentCultureIgnoreCase))
+            foreach (TranslationUnit tu in ourTranslationUnits)
             {
-                num = num.Substring(2);
-
-                return long.TryParse(num, NumberStyles.HexNumber,
-                    CultureInfo.CurrentCulture, out val);
-            }
-
-            return long.TryParse(num, out val);
-        }
-
-        public static void GenerateClassWithConstValuesFromMacros(this ASTContext context, string className)
-        {
-            foreach (var unit in context.TranslationUnits)
-            {
-                var @class = new Class { Name = className };
-                foreach (var macro in unit.PreprocessedEntities.OfType<MacroDefinition>().Where(m => ((TranslationUnit)m.Namespace).FilePath == unit.FilePath))
+                var wrappingClass = tu.FindClass(className);
+                if (wrappingClass == null)
+                {
+                    wrappingClass = new Class { Name = className, Namespace = tu };
+                    tu.Classes.Add(wrappingClass);
+                }
+                foreach (
+                    MacroDefinition macro in
+                        tu.PreprocessedEntities.OfType<MacroDefinition>())
                 {
                     if (macro.Enumeration != null)
                         continue;
 
-                    var item = GenerateConstValueFromMacro(context, macro);
+                    Field item = GenerateConstValueFromMacro(context, macro);
                     if (item == null)
                         continue;
-                    @class.Fields.Add(item);
+                    wrappingClass.Fields.Add(item);
                 }
 
-                if(@class.Fields.Any())
-                {
-                    unit.Classes.Add(@class);
-                }
             }
         }
     }
-
 }

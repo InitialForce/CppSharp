@@ -15,12 +15,12 @@ namespace CppSharp
         /// <summary>
         /// Do transformations that should happen before passes are processed.
         /// </summary>
-        void Preprocess(Driver driver, ASTContext ctx);
+        void Preprocess(Driver driver, ASTContext ctx, IEnumerable<ASTContext> dependentContexts = null);
 
         /// <summary>
         /// Do transformations that should happen after passes are processed.
         /// </summary>
-        void Postprocess(Driver driver, ASTContext lib);
+        void Postprocess(Driver driver, ASTContext lib, IEnumerable<ASTContext> dependentContexts = null);
 
         /// <summary>
         /// Setup the driver options here.
