@@ -2181,15 +2181,28 @@ CppSharp::AST::PreprocessedEntity^ Parser::WalkPreprocessedEntity(
     {
     case PreprocessedEntity::MacroExpansionKind:
     {
-        auto MD = cast<MacroExpansion>(PPEntity);
-        Entity = gcnew CppSharp::AST::MacroExpansion();
+        auto ME = cast<MacroExpansion>(PPEntity);
+        auto MD = ME->getDefinition();
+        auto Loc = MD->getLocation();
+
+        // ignore expansion if the definition is not valid (e.g. not in our headers)
+        if (!IsValidDeclaration(Loc))
+            break;
+
+        auto name = clix::marshalString<clix::E_UTF8>(MD->getName()->getName())->Trim();
+        auto TU = GetTranslationUnit(Loc, NULL);
+        auto Expansion = TU->FindMacroExpansion(name, true);
+
+        Decl->PreprocessedEntities->Add(Expansion);
 
         std::string Text;
         if (!GetDeclText(PPEntity->getSourceRange(), Text))
             return nullptr;
 
-        static_cast<CppSharp::AST::MacroExpansion^>(Entity)->Text = 
-            clix::marshalString<clix::E_UTF8>(Text);
+        Expansion->Text = clix::marshalString<clix::E_UTF8>(Text);
+
+        Entity = Expansion;
+
         break;
     }
     case PreprocessedEntity::MacroDefinitionKind:
@@ -2228,12 +2241,11 @@ CppSharp::AST::PreprocessedEntity^ Parser::WalkPreprocessedEntity(
         if (Invalid || Expression.empty())
             break;
 
-        auto Definition = gcnew CppSharp::AST::MacroDefinition();
-        Entity = Definition;
-
-        Definition->Namespace = GetTranslationUnit(MD->getLocation(), NULL);
-        Definition->Name = clix::marshalString<clix::E_UTF8>(II->getName())->Trim();
+        auto translationUnit = GetTranslationUnit(MD->getLocation(), NULL);
+        auto name = clix::marshalString<clix::E_UTF8>(II->getName())->Trim();
+        auto Definition = translationUnit->FindMacroDefinition(name, true);
         Definition->Expression = clix::marshalString<clix::E_UTF8>(Expression)->Trim();
+        Entity = Definition;
     }
     }
 
@@ -2241,8 +2253,6 @@ CppSharp::AST::PreprocessedEntity^ Parser::WalkPreprocessedEntity(
         return nullptr;
 
     Entity->OriginalPtr = System::IntPtr(PPEntity);
-    Decl->PreprocessedEntities->Add(Entity);
-
     return Entity;
 }
 

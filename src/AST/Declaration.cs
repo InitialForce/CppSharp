@@ -190,7 +190,7 @@ namespace CppSharp.AST
         public ISet<System.Type> ExcludeFromPasses;
 
         // List of preprocessed entities attached to this declaration.
-        public IList<PreprocessedEntity> PreprocessedEntities; 
+        public List<PreprocessedEntity> PreprocessedEntities; 
 
         // Pointer to the original declaration from Clang.
         public IntPtr OriginalPtr;
