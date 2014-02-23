@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using CppSharp.AST;
 using CppSharp.Types;
 using Type = CppSharp.AST.Type;
@@ -31,6 +32,7 @@ namespace CppSharp.Generators.CSharp
         {
             CSharpKind = csharpKind;
         }
+
     }
 
     public class CSharpTypePrinterResult
@@ -203,13 +205,13 @@ namespace CppSharp.Generators.CSharp
 
             var isManagedContext = ContextKind == CSharpTypePrinterContextKind.Managed;
 
-            // TODO: make option for this
             if (IsConstCharString(pointer))
             {
-                if (Context.Parameter != null)
+                if (Context.Parameter != null && !Context.Parameter.IsReturn)
                     return "string";
 
-                return isManagedContext ? "string" : "global::System.IntPtr";
+                if (isManagedContext)
+                    return "string";
             }
 
             PrimitiveType primitive;
