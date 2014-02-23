@@ -2750,7 +2750,7 @@ namespace CppSharp.Generators.CSharp
             var typePrinter = TypePrinter as CSharpTypePrinter;
             typePrinter.PushContext(CSharpTypePrinterContextKind.Native);
 
-            var retParam = new Parameter { QualifiedType = function.ReturnType };
+            var retParam = new Parameter { QualifiedType = function.ReturnType, IsReturn = true };
             var retType = retParam.CSharpType(typePrinter);
 
             var method = function as Method;

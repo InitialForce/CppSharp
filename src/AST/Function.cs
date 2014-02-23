@@ -54,6 +54,8 @@ namespace CppSharp.AST
             get { return Kind != ParameterKind.Regular; }
         }
 
+        public bool IsReturn { get; set; }
+
         public override T Visit<T>(IDeclVisitor<T> visitor)
         {
             return visitor.VisitParameterDecl(this);
