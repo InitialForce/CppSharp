@@ -25,11 +25,11 @@ namespace CppSharp.Generators.CSharp
     public class CSharpExpressionPrinter : IExpressionPrinter<CSharpExpressionPrinterResult>,
         IExpressionVisitor<CSharpExpressionPrinterResult>
     {
-        public CSharpExpressionPrinterResult VisitBuiltinExpression(BuiltinTypeExpression builtinType)
+        public CSharpExpressionPrinterResult VisitBuiltinExpression(PrimitiveTypeExpression primitiveType)
         {
             return new CSharpExpressionPrinterResult()
             {
-                Value = builtinType.ToString(),
+                Value = primitiveType.ToString(),
             };
         }
 
