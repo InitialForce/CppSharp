@@ -196,6 +196,8 @@ namespace CppSharp.Generators.CSharp
             TypeQualifiers quals)
         {
             var pointee = pointer.Pointee;
+            var desugared = pointee.Desugar();
+            PrimitiveType primitive;
 
             if (pointee is FunctionType)
             {
@@ -205,17 +207,28 @@ namespace CppSharp.Generators.CSharp
 
             var isManagedContext = ContextKind == CSharpTypePrinterContextKind.Managed;
 
-            if (IsConstCharString(pointer))
+
+            // string* ?
+            if ((desugared.IsPrimitiveType(PrimitiveType.Char) ||
+                 desugared.IsPrimitiveType(PrimitiveType.WideChar)))
             {
-                if (Context.Parameter != null && !Context.Parameter.IsReturn)
-                    return "string";
+                // const string*?
+                if (pointer.QualifiedPointee.Qualifiers.IsConst)
+                {
+                    if (Context.Parameter != null && !Context.Parameter.IsReturn)
+                        return "string";
 
-                if (isManagedContext)
-                    return "string";
+                    if (isManagedContext)
+                        return "string";
+                }
+                else
+                {
+                    // string*, not const, not return value
+                    if (Context.Parameter != null && !Context.Parameter.IsReturn)
+                        return "System.Text.StringBuilder";
+                }
             }
-
-            PrimitiveType primitive;
-            var desugared = pointee.Desugar();
+            
             if (desugared.IsPrimitiveType(out primitive))
             {
                 if (isManagedContext && Context.Parameter != null &&
