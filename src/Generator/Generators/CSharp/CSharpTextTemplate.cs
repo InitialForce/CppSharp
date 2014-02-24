@@ -873,9 +873,11 @@ namespace CppSharp.Generators.CSharp
 
             if (field.Expression != null)
             {
+                var isConst = field.QualifiedType.Qualifiers.IsConst ? "const " : string.Empty;
+
                 var fieldValuePrinted = field.Expression.CSharpValue(ExpressionPrinter);
-                Write("{0} const {1} {2} = {3};", field.Ignore ? "internal" : "public",
-                    fieldTypePrinted.Type, safeIdentifier, fieldValuePrinted);
+                Write("{0} {1}{2} {3} = {4};", field.Ignore ? "internal" : "public",
+                    isConst, fieldTypePrinted.Type, safeIdentifier, fieldValuePrinted);
             }
             else
             {
