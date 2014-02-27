@@ -4,8 +4,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using CppSharp;
 using CppSharp.AST;
+using CppSharp.Passes;
+using Type = CppSharp.AST.Type;
 
 namespace FFmpegBindings
 {
@@ -158,6 +161,7 @@ namespace FFmpegBindings
 
         public virtual void SetupPasses(Driver driver)
         {
+            driver.TranslationUnitPasses.AddPass(new RewriteDoublePointerFunctionParametersToRef());
         }
 
         protected virtual bool ShouldIncludeHeader(FileInfo headerFileName)
@@ -168,6 +172,33 @@ namespace FFmpegBindings
         }
     }
 
+    public class RewriteDoublePointerFunctionParametersToRef : TranslationUnitPass
+    {
+        public override bool VisitFunctionDecl(Function function)
+        {
+            foreach (var parameter in function.Parameters.Where(IsDoublePointer))
+            {
+                parameter.Usage = ParameterUsage.InOut;
+                parameter.QualifiedType = new QualifiedType
+                {
+                    Type = ((PointerType) parameter.Type).Pointee,
+                    Qualifiers = parameter.QualifiedType.Qualifiers
+                };
+            }
+            return true;
+        }
+
+        private bool IsDoublePointer(Parameter arg)
+        {
+            var type = arg.Type as PointerType;
+            if(type != null)
+            {
+                return type.Pointee.Desugar() is PointerType;
+            }
+            return false;
+        }
+    }
+    
     public static class X
     {
         public static Field GenerateConstValueFromMacro(this ASTContext context,
