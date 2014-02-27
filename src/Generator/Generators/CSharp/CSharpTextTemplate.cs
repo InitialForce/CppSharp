@@ -2561,7 +2561,7 @@ namespace CppSharp.Generators.CSharp
                 case ParameterUsage.Out:
                     return "out ";
                 case ParameterUsage.InOut:
-                    return "ref";
+                    return "ref ";
                 default:
                     return string.Empty;
             }
