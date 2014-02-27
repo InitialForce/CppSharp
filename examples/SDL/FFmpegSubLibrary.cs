@@ -16,6 +16,7 @@ namespace FFmpegBindings
     {
         IEnumerable<IComplexLibrary> DependentLibraries { get; }
         string OutputNamespace { get; }
+        string LibraryNameSpace { get; }
     }
 
     [DebuggerDisplay("{LibraryName}")]
@@ -102,39 +103,17 @@ namespace FFmpegBindings
 
         public virtual void Postprocess(Driver driver, ASTContext lib, IEnumerable<ASTContext> dependentContexts)
         {
-            var ourTranslationUnits = lib.TranslationUnits.Where(
-                o => !dependentContexts.Any(d => d.TranslationUnits.Any(t => t == o.TranslationUnit)));
+            var ourTranslationUnits = GetLibOnlyTranslationUnits(lib, dependentContexts);
 
             lib.GenerateClassWithConstValuesFromMacros(ourTranslationUnits, LibraryNameSpace);
-            foreach (TranslationUnit tu in ourTranslationUnits)
-            {
-                var wrappingClass = tu.FindClass(LibraryNameSpace);
-                if (wrappingClass == null)
-                {
-                    wrappingClass = new Class {Name = LibraryNameSpace, Namespace = tu};
-                }
-                wrappingClass.Classes.AddRange(tu.Classes.Except(new List<Class> {wrappingClass}));
-                foreach (Class decl in wrappingClass.Classes)
-                {
-                    decl.Namespace = wrappingClass;
-                }
-                tu.Classes.Clear();
-                tu.Classes.Add(wrappingClass);
+            this.MoveAllIntoWrapperClass(ourTranslationUnits);
+        }
 
-                wrappingClass.Functions.AddRange(tu.Functions);
-                foreach (Function decl in wrappingClass.Functions)
-                {
-                    decl.Namespace = wrappingClass;
-                }
-                tu.Functions.Clear();
-
-                wrappingClass.Enums.AddRange(tu.Enums);
-                foreach (Enumeration decl in wrappingClass.Enums)
-                {
-                    decl.Namespace = wrappingClass;
-                }
-                tu.Enums.Clear();
-            }
+        private static List<TranslationUnit> GetLibOnlyTranslationUnits(ASTContext lib, IEnumerable<ASTContext> dependentContexts)
+        {
+            var ourTranslationUnits = lib.TranslationUnits.Where(
+                o => !dependentContexts.Any(d => d.TranslationUnits.Any(t => t == o.TranslationUnit))).ToList();
+            return ourTranslationUnits;
         }
 
         public virtual void Setup(Driver driver)
@@ -228,10 +207,9 @@ namespace FFmpegBindings
         {
             foreach (TranslationUnit tu in ourTranslationUnits)
             {
-                var wrappingClass = tu.FindClass(className);
-                if (wrappingClass == null)
+                Class wrappingClass;
+                if (GetCreateWrappingClass(className, tu, out wrappingClass))
                 {
-                    wrappingClass = new Class { Name = className, Namespace = tu };
                     tu.Classes.Add(wrappingClass);
                 }
                 foreach (
@@ -246,7 +224,48 @@ namespace FFmpegBindings
                         continue;
                     wrappingClass.Fields.Add(item);
                 }
+            }
+        }
 
+        private static bool GetCreateWrappingClass(string className, TranslationUnit tu, out Class wrappingClass)
+        {
+            wrappingClass = tu.FindClass(className);
+            if (wrappingClass == null)
+            {
+                wrappingClass = new Class {Name = className, Namespace = tu, IsStatic = true};
+                return true;
+            }
+            return false;
+        }
+
+        public static void MoveAllIntoWrapperClass(this IComplexLibrary library, IEnumerable<TranslationUnit> ourTranslationUnits)
+        {
+            foreach (TranslationUnit tu in ourTranslationUnits)
+            {
+                Class wrappingClass;
+                GetCreateWrappingClass(library.LibraryNameSpace, tu, out wrappingClass);
+
+                wrappingClass.Classes.AddRange(tu.Classes.Except(new List<Class> { wrappingClass }));
+                foreach (Class decl in wrappingClass.Classes)
+                {
+                    decl.Namespace = wrappingClass;
+                }
+                tu.Classes.Clear();
+                tu.Classes.Add(wrappingClass);
+
+                wrappingClass.Functions.AddRange(tu.Functions);
+                foreach (Function decl in wrappingClass.Functions)
+                {
+                    decl.Namespace = wrappingClass;
+                }
+                tu.Functions.Clear();
+
+                wrappingClass.Enums.AddRange(tu.Enums);
+                foreach (Enumeration decl in wrappingClass.Enums)
+                {
+                    decl.Namespace = wrappingClass;
+                }
+                tu.Enums.Clear();
             }
         }
     }
