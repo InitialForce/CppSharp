@@ -290,7 +290,11 @@ namespace CppSharp
             if (!Options.Gnu99Mode)
             {
                 TranslationUnitPasses.AddPass(new FieldToPropertyPass());
-                TranslationUnitPasses.AddPass(new CleanInvalidDeclNamesPass());
+            }
+            TranslationUnitPasses.AddPass(new CleanInvalidDeclNamesPass());
+            // skip when Gnu99Mode
+            if (!Options.Gnu99Mode)
+            {
                 TranslationUnitPasses.AddPass(new CheckIgnoredDeclsPass());
             }
             TranslationUnitPasses.AddPass(new CheckFlagEnumsPass());
