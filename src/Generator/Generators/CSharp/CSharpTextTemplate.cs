@@ -2768,7 +2768,7 @@ namespace CppSharp.Generators.CSharp
 
                 var typeName = param.CSharpType(typePrinter);
 
-                @params.Add(string.Format("{0} {1}", typeName, param.Name));
+                @params.Add(string.Format("{0}{1} {2}", GetParameterUsage(param.Usage), typeName, param.Name));
             }
 
             if (method != null && method.IsConstructor)
