@@ -231,8 +231,11 @@ namespace CppSharp.Generators.CSharp
             if (context.HasFunctions)
             {
                 PushBlock(CSharpBlockKind.Functions);
-                WriteLine("public unsafe partial class {0}", Helpers.SafeIdentifier(Options.OutputNamespace));
-                WriteStartBraceIndent();
+                if(isNamespace)
+                {
+                    WriteLine("public unsafe partial class {0}", Helpers.SafeIdentifier(Options.OutputNamespace));
+                    WriteStartBraceIndent();
+                }
 
 //                PushBlock(CSharpBlockKind.InternalsClass);
 //                GenerateClassInternalHead();
@@ -249,7 +252,10 @@ namespace CppSharp.Generators.CSharp
 //                WriteCloseBraceIndent();
 //                PopBlock(NewLineKind.BeforeNextBlock);
 
-                WriteCloseBraceIndent();
+                if (isNamespace)
+                {
+                    WriteCloseBraceIndent();
+                }
                 PopBlock(NewLineKind.BeforeNextBlock);
             }
 
