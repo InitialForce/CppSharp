@@ -798,6 +798,9 @@ namespace CppSharp.Generators.CSharp
             if (Driver.Options.GenerateAbstractImpls && @class.IsAbstract)
                 Write("abstract ");
 
+            if (@class.IsStatic)
+                Write("static ");
+
             if (Options.GeneratePartialClasses)
                 Write("partial ");
 
