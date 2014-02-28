@@ -255,7 +255,8 @@ namespace CppSharp
 
             if (Options.Gnu99Mode && Options.IsCSharpGenerator)
             {
-                TranslationUnitPasses.AddPass(new UnwrapUnsupportedArraysPass());
+//                TranslationUnitPasses.AddPass(new UnwrapUnsupportedArraysPass());
+                TranslationUnitPasses.AddPass(new GenerateWrapperForUnsupportedArrayFieldsPass());
             }
 
             TranslationUnitPasses.AddPass(new ResolveIncompleteDeclsPass());
