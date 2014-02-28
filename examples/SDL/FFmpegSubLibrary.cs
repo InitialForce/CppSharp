@@ -185,8 +185,6 @@ namespace FFmpegBindings
 
         protected override void ModifyFunction(Function function)
         {
-            if (function.Name == "av_codec_get_id")
-                Console.WriteLine("test");
             function.Parameters = function.Parameters.Select(ModifyParameter).ToList();
         }
 
@@ -213,7 +211,7 @@ namespace FFmpegBindings
         }
     }
 
-    public static class X
+    public static class Extensions
     {
         public static Field GenerateConstValueFromMacro(this ASTContext context,
             MacroDefinition macro)
