@@ -37,6 +37,16 @@ namespace CppSharp.AST
             HasDefaultValue = false;
         }
 
+        public Parameter(Parameter parameter) : base(parameter)
+        {
+            QualifiedType = parameter.QualifiedType;
+            Kind = parameter.Kind;
+            Usage = parameter.Usage;
+            IsIndirect = parameter.IsIndirect;
+            IsReturn = parameter.IsReturn;
+            HasDefaultValue = parameter.HasDefaultValue;
+        }
+
         public Type Type { get { return QualifiedType.Type; } }
         public QualifiedType QualifiedType { get; set; }
         public bool IsIndirect { get; set; }
