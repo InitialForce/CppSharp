@@ -47,9 +47,9 @@ namespace CppSharp.Passes
 
                 if (IsSupportedArray(typeInArray)) yield break;
 
-                var unwrapInfo = GetUnwrapInfo(arrayType, typeInArray);
-                
-                if(unwrapInfo == null)
+                UnwrapInfo? unwrapInfo = GetUnwrapInfo(arrayType, typeInArray);
+
+                if (unwrapInfo == null)
                 {
                     Driver.Diagnostics.EmitWarning("Failed to unwrap {0}.{1} ({2})",
                         @class.Name, field.Name, field.Type);
@@ -64,24 +64,11 @@ namespace CppSharp.Passes
                     // field[N] becomes field_0 .. field_N
                     string unwrappedName = field.Name + "_" + i;
 
-                    var unwrappedField = new Field
+                    var unwrappedField = new Field(field)
                     {
                         Name = unwrappedName,
                         Offset = (uint) (field.Offset + i*unwrapInfo.Value.UnwrapTypeWidth),
-                        Class = @class,
-                        DebugText = field.DebugText,
-                        DefinitionOrder = field.DefinitionOrder,
-                        Namespace = field.Namespace,
                         QualifiedType = new QualifiedType(unwrapInfo.Value.UnwrapType, field.QualifiedType.Qualifiers),
-                        IgnoreFlags = field.IgnoreFlags,
-                        IsGenerated = field.IsGenerated,
-                        ExcludeFromPasses = field.ExcludeFromPasses,
-                        ExplicityIgnored = field.ExplicityIgnored,
-                        CompleteDeclaration = field.CompleteDeclaration,
-                        Comment = field.Comment,
-                        IsIncomplete = field.IsIncomplete,
-                        Access = field.Access,
-                        IsDependent = field.IsDependent,
                     };
 
                     IEnumerable<Field> unwrappedAgain = TryUnwrapField(@class, unwrappedField).ToList();
@@ -126,7 +113,7 @@ namespace CppSharp.Passes
                 // unwrap to multiple pointer fields
                 unwrapType = new PointerType
                 {
-                    QualifiedPointee = ((PointerType)typeInArray).QualifiedPointee
+                    QualifiedPointee = ((PointerType) typeInArray).QualifiedPointee
                 };
                 unwrapCount = arrayType.Size;
                 // TODO: get type width from driver TargetInfo!
@@ -139,7 +126,7 @@ namespace CppSharp.Passes
                 // becomes
                 // int** X_0;
                 // int** X_M;
-                var innerArray = (ArrayType)((PointerType)typeInArray).Pointee;
+                var innerArray = (ArrayType) ((PointerType) typeInArray).Pointee;
 
                 unwrapType = new PointerType
                 {
@@ -158,14 +145,14 @@ namespace CppSharp.Passes
                 // becomes
                 // int A_0[M];
                 // int A_N[M];
-                Type innerArray = ((ArrayType)(typeInArray)).Type;
+                Type innerArray = ((ArrayType) (typeInArray)).Type;
                 unwrapType = new ArrayType
                 {
-                    Size = ((ArrayType)(typeInArray)).Size,
+                    Size = ((ArrayType) (typeInArray)).Size,
                     SizeType = ArrayType.ArraySize.Constant,
                     Type = innerArray
                 };
-                unwrapCount = arrayType.Size / ((ArrayType)(typeInArray)).Size;
+                unwrapCount = arrayType.Size/((ArrayType) (typeInArray)).Size;
                 // TODO: get type width from driver TargetInfo!
                 unwrapTypeWidth = 0;
             }
@@ -193,13 +180,13 @@ namespace CppSharp.Passes
                 UnwrapTypeWidth = unwrapTypeWidth
             };
         }
-    }
 
-    internal struct UnwrapInfo
-    {
-        public Type UnwrapType { get; set; }
-        // in bits!
-        public long UnwrapTypeWidth { get; set; }
-        public long UnwrapCount { get; set; }
+        private struct UnwrapInfo
+        {
+            public Type UnwrapType { get; set; }
+            // in bits!
+            public long UnwrapTypeWidth { get; set; }
+            public long UnwrapCount { get; set; }
+        }
     }
 }
