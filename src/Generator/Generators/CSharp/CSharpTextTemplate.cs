@@ -2748,6 +2748,8 @@ namespace CppSharp.Generators.CSharp
             WriteLine("CallingConvention = global::System.Runtime.InteropServices.CallingConvention.{0},",
                 callConv);
 
+            WriteLineIndent("CharSet = CharSet.Ansi, ExactSpelling = true,");
+
             WriteLineIndent("EntryPoint=\"{0}\")]", function.Mangled);
 
             if (function.ReturnType.Type.Desugar().IsPrimitiveType(PrimitiveType.Bool))
