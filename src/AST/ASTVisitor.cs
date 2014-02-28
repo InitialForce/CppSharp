@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace CppSharp.AST
 {
@@ -388,33 +389,33 @@ namespace CppSharp.AST
             if (!VisitDeclaration(context))
                 return false;
 
-            foreach (var decl in context.Classes)
+            foreach (var decl in context.Classes.ToList())
                 decl.Visit(this);
 
-            foreach (var decl in context.Functions)
+            foreach (var decl in context.Functions.ToList())
                 decl.Visit(this);
 
             if (Options.VisitNamespaceEnums)
-                foreach (var decl in context.Enums)
+                foreach (var decl in context.Enums.ToList())
                   decl.Visit(this);
 
             if (Options.VisitNamespaceTemplates)
-                foreach (var decl in context.Templates)
+                foreach (var decl in context.Templates.ToList())
                     decl.Visit(this);
 
             if (Options.VisitNamespaceTypedefs)
-                foreach (var decl in context.Typedefs)
+                foreach (var decl in context.Typedefs.ToList())
                     decl.Visit(this);
 
             if (Options.VisitNamespaceVariables)
-                foreach (var decl in context.Variables)
+                foreach (var decl in context.Variables.ToList())
                     decl.Visit(this);
 
             if (Options.VisitNamespaceEvents)
-                foreach (var decl in context.Events)
+                foreach (var decl in context.Events.ToList())
                     decl.Visit(this);
 
-            foreach (var decl in context.Namespaces)
+            foreach (var decl in context.Namespaces.ToList())
                 decl.Visit(this);
 
             return true;
