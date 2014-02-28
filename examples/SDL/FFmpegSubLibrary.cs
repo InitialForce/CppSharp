@@ -152,33 +152,67 @@ namespace FFmpegBindings
         }
     }
 
-    public class RewriteDoublePointerFunctionParametersToRef : TranslationUnitPass
+    public abstract class CreateFunctionOverload : TranslationUnitPass
     {
         public override bool VisitFunctionDecl(Function function)
         {
-            foreach (var parameter in function.Parameters.Where(IsDoublePointer))
+            if (CheckModify(function))
             {
-                parameter.Usage = ParameterUsage.InOut;
-                parameter.QualifiedType = new QualifiedType
-                {
-                    Type = ((PointerType) parameter.Type).Pointee,
-                    Qualifiers = parameter.QualifiedType.Qualifiers
-                };
+                var clone = new Function(function);
+                ModifyFunction(clone);
+                var index = function.Namespace.Functions.IndexOf(function);
+                function.Namespace.Functions.Insert(index + 1, clone);
             }
             return true;
         }
 
-        private bool IsDoublePointer(Parameter arg)
+        protected abstract void ModifyFunction(Function function);
+
+        protected abstract bool CheckModify(Function arg);
+    }
+
+    public class RewriteDoublePointerFunctionParametersToRef : CreateFunctionOverload
+    {
+        private bool IsDoublePointer(Parameter parameter)
         {
-            var type = arg.Type as PointerType;
-            if(type != null)
+            var type = parameter.Type as PointerType;
+            if (type != null)
             {
                 return type.Pointee.Desugar() is PointerType;
             }
             return false;
         }
+
+        protected override void ModifyFunction(Function function)
+        {
+            if (function.Name == "av_codec_get_id")
+                Console.WriteLine("test");
+            function.Parameters = function.Parameters.Select(ModifyParameter).ToList();
+        }
+
+        private Parameter ModifyParameter(Parameter parameter)
+        {
+            if (IsDoublePointer(parameter))
+            {
+                return new Parameter(parameter)
+                {
+                    Usage = ParameterUsage.InOut,
+                    QualifiedType = new QualifiedType
+                    {
+                        Type = ((PointerType) parameter.Type).Pointee,
+                        Qualifiers = parameter.QualifiedType.Qualifiers
+                    }
+                };
+            }
+            return parameter;
+        }
+
+        protected override bool CheckModify(Function arg)
+        {
+            return arg.Parameters.Any(IsDoublePointer);
+        }
     }
-    
+
     public static class X
     {
         public static Field GenerateConstValueFromMacro(this ASTContext context,
@@ -210,8 +244,8 @@ namespace FFmpegBindings
             foreach (TranslationUnit tu in ourTranslationUnits)
             {
             }
-
         }
+
         public static void GenerateClassWithConstValuesFromMacros(this ASTContext context, IEnumerable<TranslationUnit> ourTranslationUnits, string className)
         {
             foreach (TranslationUnit tu in ourTranslationUnits)
