@@ -106,6 +106,7 @@ namespace FFmpegBindings
             var ourTranslationUnits = GetLibOnlyTranslationUnits(lib, dependentContexts);
 
             lib.GenerateClassWithConstValuesFromMacros(ourTranslationUnits, LibraryNameSpace);
+            lib.CreateOverloadsForFunctionWithParamConstChar(ourTranslationUnits);
             this.MoveAllIntoWrapperClass(ourTranslationUnits);
         }
 
@@ -203,6 +204,14 @@ namespace FFmpegBindings
             return item;
         }
 
+        public static void CreateOverloadsForFunctionWithParamConstChar(this ASTContext context,
+            IEnumerable<TranslationUnit> ourTranslationUnits)
+        {
+            foreach (TranslationUnit tu in ourTranslationUnits)
+            {
+            }
+
+        }
         public static void GenerateClassWithConstValuesFromMacros(this ASTContext context, IEnumerable<TranslationUnit> ourTranslationUnits, string className)
         {
             foreach (TranslationUnit tu in ourTranslationUnits)
