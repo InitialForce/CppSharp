@@ -82,6 +82,15 @@ namespace CppSharp.AST
 
                 return true;
             }
+
+
+            double parsedDouble;
+            if (ParseAsDouble(expression, out parsedDouble))
+            {
+                primitiveType = PrimitiveType.Double;
+                parsedValue = parsedDouble;
+                return true;
+            }
             string parsedString;
             if (ParseAsString(expression, out parsedString))
             {
@@ -92,6 +101,11 @@ namespace CppSharp.AST
             primitiveType = PrimitiveType.Void;
             parsedValue = null;
             return false;
+        }
+
+        private static bool ParseAsDouble(string expression, out double parsedDouble)
+        {
+            return double.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedDouble);
         }
 
         private static bool ParseAsString(string expression, out string valueAsString)
@@ -133,6 +147,10 @@ namespace CppSharp.AST
             {
                 case PrimitiveType.WideChar:
                     return '"' + (string) _parsedValue + '"';
+                case PrimitiveType.Double:
+                {
+                    return string.Format(CultureInfo.InvariantCulture, "{0}D", ((double) _parsedValue));
+                }
                 case PrimitiveType.Int8:
                 case PrimitiveType.UInt8:
                 case PrimitiveType.Int16:
@@ -149,7 +167,6 @@ namespace CppSharp.AST
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-           
         }
 
         public override T Visit<T>(IExpressionVisitor<T> visitor)
