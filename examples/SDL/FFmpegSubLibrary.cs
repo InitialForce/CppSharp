@@ -40,7 +40,7 @@ namespace FFmpegBindings
             _outputDir = outputDir;
             DependentLibraries = dependentLibraries ?? Enumerable.Empty<IComplexLibrary>();
             _filesToIgnore = filesToIgnore ?? Enumerable.Empty<string>();
-            OutputNamespace = "ffmpeg";
+            OutputNamespace = "FFmpeg";
         }
 
         public string LibraryName { get; private set; }
@@ -122,7 +122,7 @@ namespace FFmpegBindings
             driver.Options.LibraryName = DllName;
             driver.Options.IncludeDirs.Add(_includeDir.FullName);
             driver.Options.OutputDir = Path.Combine(_outputDir.FullName, LibraryNameSpace);
-            driver.Options.OutputNamespace = "ffmpeg";
+            driver.Options.OutputNamespace = "FFmpeg";
 //            driver.Options.OutputClass = LibraryNameSpace;
             string combine = Path.Combine(_includeDir.FullName, LibraryNameSpace);
             foreach (FileInfo headerFile in Directory.GetFiles(combine).Select(a => new FileInfo(a)))
@@ -135,7 +135,11 @@ namespace FFmpegBindings
             }
             foreach (var dependentLibrary in DependentLibraries)
             {
-                driver.Options.DependentNameSpaces.Add(dependentLibrary.OutputNamespace);
+                string outputNamespace = dependentLibrary.OutputNamespace;
+                if(!driver.Options.DependentNameSpaces.Contains(outputNamespace))
+                {
+                    driver.Options.DependentNameSpaces.Add(outputNamespace);
+                }
             }
         }
 
@@ -214,8 +218,36 @@ namespace FFmpegBindings
     public static class Extensions
     {
         public static Field GenerateConstValueFromMacro(this ASTContext context,
+            MacroExpansion macro)
+        {
+            if (macro.Text != null && macro.Text.Contains("M_PI"))
+                Debugger.Break();
+
+            var builtinTypeExpression = PrimitiveTypeExpression.TryCreate(macro.Text);
+            if (builtinTypeExpression == null)
+                return null;
+            var valueType = new QualifiedType(new BuiltinType(builtinTypeExpression.Type))
+            {
+                Qualifiers = new TypeQualifiers { IsConst = true }
+            };
+            var item = new Field
+            {
+                Name = macro.Name,
+                DebugText = macro.DebugText,
+                Access = AccessSpecifier.Public,
+                Expression =
+                    builtinTypeExpression,
+                QualifiedType = valueType
+            };
+
+            return item;
+        }
+        public static Field GenerateConstValueFromMacro(this ASTContext context,
             MacroDefinition macro)
         {
+            if(macro.Expression != null && macro.Expression.Contains("M_PI"))
+                Debugger.Break();
+
             var builtinTypeExpression = PrimitiveTypeExpression.TryCreate(macro.Expression);
             if (builtinTypeExpression == null)
                 return null;
@@ -252,6 +284,15 @@ namespace FFmpegBindings
                 if (GetCreateWrappingClass(className, tu, out wrappingClass))
                 {
                     tu.Classes.Add(wrappingClass);
+                }
+                foreach (
+                    MacroExpansion macro in
+                        tu.PreprocessedEntities.OfType<MacroExpansion>())
+                {
+                    Field item = GenerateConstValueFromMacro(context, macro);
+                    if (item == null)
+                        continue;
+                    wrappingClass.Fields.Add(item);
                 }
                 foreach (
                     MacroDefinition macro in
