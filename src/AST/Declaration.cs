@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace CppSharp.AST
 {
@@ -36,6 +37,7 @@ namespace CppSharp.AST
     /// <summary>
     /// Represents a C++ declaration.
     /// </summary>
+    [DebuggerDisplay("{Name}")]
     public abstract class Declaration : INamedDecl
     {
         
