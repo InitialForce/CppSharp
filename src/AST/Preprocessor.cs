@@ -1,4 +1,6 @@
-﻿namespace CppSharp.AST
+﻿using System.Diagnostics;
+
+namespace CppSharp.AST
 {
     public enum MacroLocation
     {
@@ -22,6 +24,7 @@
     /// <summary>
     /// Represents a C preprocessor macro expansion.
     /// </summary>
+    [DebuggerDisplay("{Name} = {Expression}")]
     public class MacroExpansion : PreprocessedEntity
     {
         // Contains the macro expansion text.
@@ -44,6 +47,7 @@
     /// <summary>
     /// Represents a C preprocessor macro definition.
     /// </summary>
+    [DebuggerDisplay("{Name} = {Expression}")]
     public class MacroDefinition : PreprocessedEntity
     {
         // Contains the macro definition text.
