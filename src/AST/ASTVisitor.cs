@@ -390,7 +390,10 @@ namespace CppSharp.AST
                 return false;
 
             foreach (var decl in context.Classes.ToList())
+            {
                 decl.Visit(this);
+                VisitDeclarationContext(decl);
+            }
 
             foreach (var decl in context.Functions.ToList())
                 decl.Visit(this);
@@ -416,7 +419,10 @@ namespace CppSharp.AST
                     decl.Visit(this);
 
             foreach (var decl in context.Namespaces.ToList())
+            {
                 decl.Visit(this);
+                VisitDeclarationContext(decl);
+            }
 
             return true;
         }
