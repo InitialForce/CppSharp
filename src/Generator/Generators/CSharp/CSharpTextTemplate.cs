@@ -2784,7 +2784,14 @@ namespace CppSharp.Generators.CSharp
             if (Options.GenerateInternalImports)
                 libName = "__Internal";
 
-            Write("[DllImport(\"{0}\", ", libName);
+            if (Options.CustomDllImport != null)
+            {
+                Write("[DllImport({0}, ", Options.CustomDllImport);
+            }
+            else
+            {
+                Write("[DllImport(\"{0}\", ", libName);
+            }
 
             var callConv = Helpers.ToCSharpCallConv(function.CallingConvention);
             WriteLine("CallingConvention = global::System.Runtime.InteropServices.CallingConvention.{0},",

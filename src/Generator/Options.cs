@@ -98,6 +98,11 @@ namespace CppSharp
         public bool GenerateClassMarshals;
 
         /// <summary>
+        /// Allows specifying a custom DllImport identifier, this string will not be encapsulated in ""
+        /// </summary>
+        public string CustomDllImport;
+
+        /// <summary>
         /// Enable this option to enable generation of finalizers.
         /// Works in both CLI and C# backends.
         /// </summary>
@@ -138,6 +143,7 @@ namespace CppSharp
         public bool Is32Bit { get; set; }
 
         public List<string> CodeFiles { get; private set; }
+
         public readonly List<string> DependentNameSpaces = new List<string>();
         public bool MarshalCharAsManagedChar { get; set; }
     }
