@@ -123,6 +123,7 @@ namespace FFmpegBindings
             driver.Options.IncludeDirs.Add(_includeDir.FullName);
             driver.Options.OutputDir = Path.Combine(_outputDir.FullName, LibraryNameSpace);
             driver.Options.OutputNamespace = "FFmpeg";
+            driver.Options.CustomDllImport = LibraryName.ToUpper(CultureInfo.InvariantCulture) + "_DLL_NAME";
 //            driver.Options.OutputClass = LibraryNameSpace;
             string combine = Path.Combine(_includeDir.FullName, LibraryNameSpace);
             foreach (FileInfo headerFile in Directory.GetFiles(combine).Select(a => new FileInfo(a)))
