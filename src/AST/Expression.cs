@@ -14,10 +14,23 @@ namespace CppSharp.AST
     {
         private object _parsedValue;
 
-        public PrimitiveTypeExpression(string expression, object parsedValue)
+        public PrimitiveTypeExpression(double value)
+        {
+            _parsedValue = value;
+            Type = PrimitiveType.Double;
+        }
+
+        public PrimitiveTypeExpression(long value)
+        {
+            PrimitiveType type;
+            ConvertLongToSmallestIntegerType(out type, out _parsedValue, value);
+            Type = type;
+        }
+
+        private PrimitiveTypeExpression(string debugText, object parsedValue)
         {
             _parsedValue = parsedValue;
-            DebugText = expression;
+            DebugText = debugText;
         }
 
         public static PrimitiveTypeExpression TryCreate(string expression)
@@ -41,49 +54,9 @@ namespace CppSharp.AST
             long valueAsInteger;
             if (ParseAsLong(expression, out valueAsInteger))
             {
-                parsedValue = valueAsInteger;
-                if (valueAsInteger <= System.SByte.MaxValue && valueAsInteger > System.SByte.MinValue)
-                {
-                    primitiveType = PrimitiveType.Int8;
-                }
-                else if (valueAsInteger <= System.Byte.MaxValue && valueAsInteger > System.Byte.MinValue)
-                {
-                    primitiveType = PrimitiveType.UInt8;
-                }
-                else if (valueAsInteger <= System.Int16.MaxValue && valueAsInteger > System.Int16.MinValue)
-                {
-                    primitiveType = PrimitiveType.Int16;
-                }
-                else if (valueAsInteger <= System.UInt16.MaxValue && valueAsInteger > System.UInt16.MinValue)
-                {
-                    primitiveType = PrimitiveType.UInt16;
-                }
-                else if (valueAsInteger <= System.Int32.MaxValue && valueAsInteger > System.Int32.MinValue)
-                {
-                    primitiveType = PrimitiveType.Int32;
-                }
-                else if (valueAsInteger <= System.UInt32.MaxValue && valueAsInteger > System.UInt32.MinValue)
-                {
-                    primitiveType = PrimitiveType.UInt32;
-                }
-                else if (valueAsInteger <= System.Int64.MaxValue && valueAsInteger > System.Int64.MinValue)
-                {
-                    primitiveType = PrimitiveType.Int64;
-                }
-//                else if (valueAsInteger <= System.UInt64.MaxValue && valueAsInteger < System.UInt64.MinValue)
-//                {
-//                    primitiveType = PrimitiveType.UInt64;
-//                }
-                else
-                {
-                    primitiveType = PrimitiveType.Void;
-                    return false;
-                }
-
+                ConvertLongToSmallestIntegerType(out primitiveType, out parsedValue, valueAsInteger);
                 return true;
             }
-
-
             double parsedDouble;
             if (ParseAsDouble(expression, out parsedDouble))
             {
@@ -101,6 +74,48 @@ namespace CppSharp.AST
             primitiveType = PrimitiveType.Void;
             parsedValue = null;
             return false;
+        }
+
+        private static void ConvertLongToSmallestIntegerType(out PrimitiveType primitiveType, out object parsedValue,
+            long valueAsInteger)
+        {
+            parsedValue = valueAsInteger;
+            if (valueAsInteger <= System.SByte.MaxValue && valueAsInteger > System.SByte.MinValue)
+            {
+                primitiveType = PrimitiveType.Int8;
+            }
+            else if (valueAsInteger <= System.Byte.MaxValue && valueAsInteger > System.Byte.MinValue)
+            {
+                primitiveType = PrimitiveType.UInt8;
+            }
+            else if (valueAsInteger <= System.Int16.MaxValue && valueAsInteger > System.Int16.MinValue)
+            {
+                primitiveType = PrimitiveType.Int16;
+            }
+            else if (valueAsInteger <= System.UInt16.MaxValue && valueAsInteger > System.UInt16.MinValue)
+            {
+                primitiveType = PrimitiveType.UInt16;
+            }
+            else if (valueAsInteger <= System.Int32.MaxValue && valueAsInteger > System.Int32.MinValue)
+            {
+                primitiveType = PrimitiveType.Int32;
+            }
+            else if (valueAsInteger <= System.UInt32.MaxValue && valueAsInteger > System.UInt32.MinValue)
+            {
+                primitiveType = PrimitiveType.UInt32;
+            }
+            else if (valueAsInteger <= System.Int64.MaxValue && valueAsInteger > System.Int64.MinValue)
+            {
+                primitiveType = PrimitiveType.Int64;
+            }
+//                else if (valueAsInteger <= System.UInt64.MaxValue && valueAsInteger < System.UInt64.MinValue)
+//                {
+//                    primitiveType = PrimitiveType.UInt64;
+//                }
+            else
+            {
+                primitiveType = PrimitiveType.Void;
+            }
         }
 
         private static bool ParseAsDouble(string expression, out double parsedDouble)
