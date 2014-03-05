@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CppSharp.AST
 {
@@ -105,5 +106,23 @@ namespace CppSharp.AST
             return visitor.VisitProperty(this);
         }
 
+    }
+
+    /// <summary>
+    /// Special kind of indexer (used for indexing/addressing fields)
+    /// </summary>
+    public class ArrayIndexerProperty : Property
+    {
+        public readonly Dictionary<long, Field> IndexToArray = new Dictionary<long, Field>();
+
+        public ArrayIndexerProperty()
+        {
+
+        }
+        public ArrayIndexerProperty(ArrayIndexerProperty property)
+            : base(property)
+        {
+            IndexToArray = property.IndexToArray.ToDictionary(e => e.Key, e => e.Value);
+        }
     }
 }

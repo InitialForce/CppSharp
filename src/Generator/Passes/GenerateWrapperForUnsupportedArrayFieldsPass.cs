@@ -21,47 +21,44 @@ namespace CppSharp.Passes
 
         private void ProcessClass(Class @class, DeclarationContext ctx)
         {
-            for (int index = 0; index < @class.Fields.Count; index++)
+            foreach (Field field in @class.Fields)
             {
-                Field field = @class.Fields[index];
-
-                Class wrapperClass = ProcessField(@class, field, ctx);
-
-                if (wrapperClass != null)
+                ArrayType arrayType;
+                Type typeInArray;
+                var oldType = field.Type;
+                if (!ShouldUnwrap(oldType, out arrayType, out typeInArray))
                 {
-                    var wrapperField = new Field(field)
-                    {
-                        QualifiedType = new QualifiedType(new TagType(wrapperClass)),
-                    };
-
-                    @class.Fields[index] = wrapperField;
+                    continue;
                 }
-            }
-        }
 
-        private Class ProcessField(Class @class, Field field, DeclarationContext ctx)
-        {
-            ArrayType arrayType;
-            Type typeInArray;
-            if (!ShouldUnwrap(field.Type, out arrayType, out typeInArray))
-            {
-                return null;
-            }
+                UnwrapInfo? unwrapInfo = GetUnwrapInfo(arrayType, typeInArray);
+                // we should not get null, since the ShouldUnwrap check above should have 
+                if (unwrapInfo == null)
+                {
+                    Driver.Diagnostics.EmitWarning("Failed to handle const-size array field {0}.{1} of type {2}",
+                        @class.Name, field.Name, oldType);
+                    continue;
+                }
 
-            UnwrapInfo? unwrapInfo = GetUnwrapInfo(arrayType, typeInArray);
-            if (unwrapInfo != null)
-            {
                 // generate wrapper class types in class namespace (for reuse)
                 var wrapperClass = GetCreateWrapperStruct(ctx, field, unwrapInfo.Value);
-                Driver.Diagnostics.EmitMessage("Wrapping {0}.{1} ({2}) as new Class {3} ({4})",
-                    @class.Name, field.Name, field.Type, wrapperClass.Name, wrapperClass.Type);
-                ProcessClass(wrapperClass, ctx);
-                return wrapperClass;
+
+                field.QualifiedType = new QualifiedType(new TagType(wrapperClass));
+
+                Driver.Diagnostics.EmitMessage("Modified Field {0}.{1} from type {2} to type {3}",
+                    @class.Name, field.Name, oldType, field.Type);
             }
 
-            Driver.Diagnostics.EmitWarning("Failed to unwrap {0}.{1} ({2})",
-                @class.Name, field.Name, field.Type);
-            return null;
+            // may have to update indexer in class 
+            // (in the case where we are unwrapping an arraywrapper class, relevant for multi-dimensional arrays)
+            var arrayWrapperClass = @class as ArrayWrapperClass;
+            if(arrayWrapperClass != null)
+            {
+                if (arrayWrapperClass.Indexer != null)
+                {
+                    arrayWrapperClass.Indexer.QualifiedType = arrayWrapperClass.Fields[0].QualifiedType;
+                }
+            }
         }
 
         private static bool ShouldUnwrap(Type type, out ArrayType arrayType, out Type typeInArray)
@@ -92,31 +89,61 @@ namespace CppSharp.Passes
             return true;
         }
 
-        private Class GetCreateWrapperStruct(DeclarationContext ctx, Field field, UnwrapInfo unwrapInfo)
+        private ArrayWrapperClass GetCreateWrapperStruct(DeclarationContext ctx, Field field, UnwrapInfo unwrapInfo)
         {
             string wrapperClassName = "ArrayWrapper_" + unwrapInfo.UnwrapType + unwrapInfo.UnwrapCount;
 
-            Class wrapperClass = ctx.FindClass(wrapperClassName);
+            var wrapperClass = ctx.FindClass(wrapperClassName) as ArrayWrapperClass;
             if (wrapperClass == null)
             {
-                wrapperClass = new Class
+                Driver.Diagnostics.EmitMessage("Creating new Array Wrapper Class {0}",
+                    wrapperClassName);
+
+                wrapperClass = new ArrayWrapperClass
                 {
+                    ArrayWrapperType = unwrapInfo.UnwrapType,
                     Namespace = ctx,
                     Name = wrapperClassName,
                     Type = ClassType.ValueType,
                 };
 
-                // cant have field with value in value type/struct... make property instead
-//                PrimitiveTypeExpression primitiveTypeExpression =
-//                    PrimitiveTypeExpression.TryCreate(unwrapInfo.UnwrapCount.ToString(CultureInfo.InvariantCulture));
-//                wrapperClass.Fields.Add(new Field
-//                {
-//                    Name = "Length",
-//                    Expression = primitiveTypeExpression,
-//                    Access = AccessSpecifier.Public,
-//                    QualifiedType = new QualifiedType(new BuiltinType(primitiveTypeExpression.Type))
-//                });
+                // Create length const field
+                var lengthField = new Field
+                {
+                    Name = "Length",
+                    Expression =
+                        PrimitiveTypeExpression.TryCreate(unwrapInfo.UnwrapCount.ToString(CultureInfo.InvariantCulture)),
+                    Access = AccessSpecifier.Public,
+                    QualifiedType =
+                        new QualifiedType(
+                            new BuiltinType(
+                                PrimitiveTypeExpression.TryCreate(
+                                    unwrapInfo.UnwrapCount.ToString(CultureInfo.InvariantCulture)).Type),
+                            new TypeQualifiers {IsConst = true})
+                };
 
+                // Add indexer (if we can..)
+                ArrayIndexerProperty indexerProperty = null;
+                bool unwrapTypeIsConstArray = unwrapInfo.UnwrapType is ArrayType && ((ArrayType)(unwrapInfo.UnwrapType)).SizeType == ArrayType.ArraySize.Constant;
+                bool unwrapTypeIsPointer = unwrapInfo.UnwrapType is PointerType;
+                if (!unwrapTypeIsConstArray)
+                {
+                    indexerProperty = new ArrayIndexerProperty
+                    {
+                        QualifiedType = new QualifiedType(unwrapInfo.UnwrapType),
+                        Namespace = wrapperClass
+                    };
+                    indexerProperty.Parameters.Add(new Parameter
+                    {
+                        QualifiedType = lengthField.QualifiedType,
+                        Name = "idx"
+                    });
+
+                    wrapperClass.Indexer = indexerProperty;
+                    wrapperClass.Properties.Add(indexerProperty);
+                }
+
+                // generate "unwrapped" fields
                 for (int i = 0; i < unwrapInfo.UnwrapCount; i++)
                 {
                     // field[N] becomes field_0 .. field_N
@@ -130,15 +157,24 @@ namespace CppSharp.Passes
                         QualifiedType = new QualifiedType(unwrapInfo.UnwrapType, field.QualifiedType.Qualifiers),
                     };
 
+                    if (indexerProperty != null)
+                    {
+                        indexerProperty.IndexToArray[i] = unwrappedField;
+                    }
+
                     wrapperClass.Fields.Add(unwrappedField);
                 }
+
+                wrapperClass.Fields.Add(lengthField);
 
                 ctx.Classes.Add(wrapperClass);
             }
 
+            // we may have to unwrap the wrapper class too;P
+            ProcessClass(wrapperClass, ctx);
+
             return wrapperClass;
         }
-
 
         private UnwrapInfo? GetUnwrapInfo(ArrayType arrayType, Type typeInArray)
         {
@@ -230,6 +266,18 @@ namespace CppSharp.Passes
             // in bits!
             public long UnwrapTypeWidth { get; set; }
             public long UnwrapCount { get; set; }
+        }
+    }
+
+    public static class TypeExtensions
+    {
+        public static bool IsPointerToArrayType(this Type type)
+        {
+            var ptr = type as PointerType;
+            if (ptr == null)
+                return false;
+            PrimitiveType primitiveType;
+            return ptr.Pointee is ArrayType;
         }
     }
 }
