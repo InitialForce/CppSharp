@@ -325,4 +325,15 @@ namespace CppSharp.AST
             return visitor.VisitClassDecl(this);
         }
     }
+
+    /// <summary>
+    /// A special type of Class, that is used for "Array unwrapping", 
+    /// e.g. where a class has multiple fields, each field representing an entry in the "array"
+    /// This is useful for representing/emulating fixed sized arrays of pointers, which is otherwise not allowed in C#
+    /// </summary>
+    public class ArrayWrapperClass : Class
+    {
+        public Type ArrayWrapperType;
+        public Property Indexer;
+    }
 }

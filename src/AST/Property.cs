@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CppSharp.AST
 {
@@ -116,6 +117,24 @@ namespace CppSharp.AST
 
             Class decl;
             return type.IsTagDecl(out decl) && decl.IsValueType;
+        }
+    }
+
+    /// <summary>
+    /// Special kind of indexer (used for indexing/addressing fields)
+    /// </summary>
+    public class ArrayIndexerProperty : Property
+    {
+        public readonly Dictionary<long, Field> IndexToArray = new Dictionary<long, Field>();
+
+        public ArrayIndexerProperty()
+        {
+
+        }
+        public ArrayIndexerProperty(ArrayIndexerProperty property)
+            : base(property)
+        {
+            IndexToArray = property.IndexToArray.ToDictionary(e => e.Key, e => e.Value);
         }
     }
 }

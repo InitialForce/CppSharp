@@ -362,6 +362,8 @@ namespace CppSharp.Generators.CSharp
                     GenerateStructInternals(@class);
 
                     GenerateDeclContext(@class);
+
+                    GenerateClassProperties(@class);
                 }
                 else
                 {
@@ -1081,6 +1083,42 @@ namespace CppSharp.Generators.CSharp
             }
         }
 
+        private void GenerateArrayIndexerProperty(ArrayIndexerProperty decl, Class @class)
+        {
+            PushBlock(CSharpBlockKind.Method);
+
+            WriteLine("get");
+            WriteStartBraceIndent();
+            WriteLine(string.Format("switch ({0})", decl.Parameters[0].Name));
+            WriteStartBraceIndent();
+            foreach (var field in decl.IndexToArray)
+            {
+                WriteLine("case {0}:", field.Key);
+                WriteLineIndent("return {0};", field.Value);
+            }
+            WriteLine("default:");
+            WriteLineIndent("throw new ArgumentOutOfRangeException();");
+            WriteCloseBraceIndent();
+            WriteCloseBraceIndent();
+
+            WriteLine("set");
+            WriteStartBraceIndent();
+            WriteLine(string.Format("switch ({0})", decl.Parameters[0].Name));
+            WriteStartBraceIndent();
+            foreach (var field in decl.IndexToArray)
+            {
+                WriteLine("case {0}:", field.Key);
+                WriteLineIndent("{0} = value;", field.Value);
+                WriteLineIndent("break;");
+            }
+            WriteLine("default:");
+            WriteLineIndent("throw new ArgumentOutOfRangeException();");
+            WriteCloseBraceIndent();
+            WriteCloseBraceIndent();
+
+            PopBlock(NewLineKind.BeforeNextBlock);
+        }
+
         private void GeneratePropertyGetter<T>(T decl, Class @class)
             where T : Declaration, ITypedDecl
         {
@@ -1285,7 +1323,7 @@ namespace CppSharp.Generators.CSharp
                 // If this is an indexer that returns an address use the real type
                 // because there is a setter anyway.
                 var type = prop.Type;
-                if (prop.Parameters.Count > 0 && prop.Type.IsPointerToPrimitiveType())
+                if (prop.Parameters.Count > 0 && prop.Type.IsPointerToPrimitiveType() && !(@class is ArrayWrapperClass))
                     type = ((PointerType) prop.Type).Pointee;
 
                 ArrayType arrayType = prop.Type as ArrayType;
@@ -1328,6 +1366,10 @@ namespace CppSharp.Generators.CSharp
                     if (prop.HasSetter)
                         GeneratePropertySetter(prop.Field.QualifiedType, prop.Field,
                             @class);
+                }
+                if (prop is ArrayIndexerProperty && ((ArrayIndexerProperty) prop).IndexToArray.Any())
+                {
+                    GenerateArrayIndexerProperty((ArrayIndexerProperty) prop, @class);
                 }
                 else
                 {
