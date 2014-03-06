@@ -143,6 +143,7 @@ namespace CppSharp
         public bool Is32Bit { get; set; }
 
         public List<string> CodeFiles { get; private set; }
+        public TranslationUnit GeneratedTypesFile { get; set; }
 
         public readonly List<string> DependentNameSpaces = new List<string>();
         public bool MarshalCharAsManagedChar { get; set; }

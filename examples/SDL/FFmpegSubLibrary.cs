@@ -24,12 +24,13 @@ namespace FFmpegBindings
     {
         private readonly IEnumerable<string> _filesToIgnore;
         private readonly DirectoryInfo _includeDir;
+        private readonly TranslationUnit _generatedTypesFile;
         private readonly DirectoryInfo _outputDir;
 
-        public FFmpegSubLibrary(DirectoryInfo includeDir, string libraryName, string dllName, DirectoryInfo outputDir,
-            IEnumerable<string> filesToIgnore = null, IEnumerable<IComplexLibrary> dependentLibraries = null)
+        public FFmpegSubLibrary(DirectoryInfo includeDir, TranslationUnit generatedTypesFile, string libraryName, string dllName, DirectoryInfo outputDir, IEnumerable<string> filesToIgnore = null, IEnumerable<IComplexLibrary> dependentLibraries = null)
         {
             _includeDir = includeDir;
+            _generatedTypesFile = generatedTypesFile;
             if (!_includeDir.Exists)
                 throw new DirectoryNotFoundException(_includeDir.FullName);
 
@@ -119,6 +120,7 @@ namespace FFmpegBindings
 
         public virtual void Setup(Driver driver)
         {
+            driver.Options.GeneratedTypesFile = _generatedTypesFile;
             driver.Options.LibraryName = DllName;
             driver.Options.IncludeDirs.Add(_includeDir.FullName);
             driver.Options.OutputDir = Path.Combine(_outputDir.FullName, LibraryNameSpace);

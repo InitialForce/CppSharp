@@ -77,6 +77,11 @@ namespace CppSharp
 
         public void Setup()
         {
+            if (Options.GeneratedTypesFile != null && !ASTContext.TranslationUnits.Contains(Options.GeneratedTypesFile))
+            {
+                ASTContext.TranslationUnits.Add(Options.GeneratedTypesFile);
+            }
+            
             ValidateOptions(Options);
             TypeDatabase.SetupTypeMaps();
             Generator = CreateGeneratorFromKind(Options.GeneratorKind);
@@ -256,7 +261,8 @@ namespace CppSharp
             if (Options.Gnu99Mode && Options.IsCSharpGenerator)
             {
 //                TranslationUnitPasses.AddPass(new UnwrapUnsupportedArraysPass());
-                TranslationUnitPasses.AddPass(new GenerateWrapperForUnsupportedArrayFieldsPass());
+                TranslationUnitPasses.AddPass(new GenerateOverloadsForFunctionArrayParametersPass(Options.GeneratedTypesFile));
+                TranslationUnitPasses.AddPass(new GenerateWrapperForUnsupportedArrayFieldsPass(Options.GeneratedTypesFile));
             }
 
             TranslationUnitPasses.AddPass(new ResolveIncompleteDeclsPass());
