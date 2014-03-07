@@ -319,8 +319,8 @@ namespace CppSharp.Generators.CSharp
             foreach (var line in strippedLines)
             {
                 WriteLine("/// " + line);
-            }
-            
+                    }
+
             WriteLine("/// </summary>");
 
             PopBlock();
@@ -339,43 +339,43 @@ namespace CppSharp.Generators.CSharp
         }
 
         #region Classes
-
         public void GenerateClass(Class @class)
         {
             //if (@class.IsIncomplete)
             //    return;
-
             if (@class.CompleteDeclaration != null)
                 return;
-
             PushBlock(CSharpBlockKind.Class);
             GenerateDeclarationCommon(@class);
-
             GenerateClassProlog(@class);
-
             NewLine();
             WriteStartBraceIndent();
-
             if (!@class.IsOpaque)
             {
                 if (Options.Gnu99Mode)
                 {
-                    GenerateStructInternals(@class);
+                    if (Options.ForceNativeTypePrinting)
+                    {
+                    TypePrinter.PushContext(CSharpTypePrinterContextKind.Native);
+                    }
 
+                    GenerateStructInternals(@class);
                     GenerateDeclContext(@class);
+                    if (Options.ForceNativeTypePrinting)
+                    {
+                        TypePrinter.PopContext();
+                }
                 }
                 else
                 {
                     GenerateClassInternals(@class);
                     GenerateDeclContext(@class);
-
                     if (@class.Ignore || @class.IsDependent)
                         goto exit;
-
                     if (ShouldGenerateClassNativeField(@class))
                     {
                         PushBlock(CSharpBlockKind.Field);
-                        WriteLine("public global::System.IntPtr {0} {{ get; {1} set; }}",
+                        WriteLine("public global::System.IntPtr {0} {{ get; {1} set; }}", Helpers.InstanceIdentifier, @class.IsValueType ? "private" : "protected");
                             Helpers.InstanceIdentifier, @class.IsValueType ? "private" : "protected");
                         PopBlock(NewLineKind.BeforeNextBlock);
                     }
@@ -386,18 +386,16 @@ namespace CppSharp.Generators.CSharp
                     }
 
                     GenerateClassConstructors(@class);
-
                     if (@class.IsUnion)
                         GenerateUnionFields(@class);
-
                     GenerateClassMethods(@class);
                     GenerateClassVariables(@class);
                     GenerateClassProperties(@class);
-
                     if (Options.GenerateVirtualTables && @class.IsDynamic)
                         GenerateVTable(@class);
                 }
             }
+
         exit:
             WriteCloseBraceIndent();
             PopBlock(NewLineKind.BeforeNextBlock);
