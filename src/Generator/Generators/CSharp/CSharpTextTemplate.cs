@@ -359,11 +359,15 @@ namespace CppSharp.Generators.CSharp
             {
                 if (Options.Gnu99Mode)
                 {
+                    TypePrinter.PushContext(CSharpTypePrinterContextKind.Native);
+
                     GenerateStructInternals(@class);
 
                     GenerateDeclContext(@class);
 
                     GenerateClassProperties(@class);
+
+                    TypePrinter.PopContext();
                 }
                 else
                 {
