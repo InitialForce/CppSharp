@@ -91,6 +91,14 @@ namespace FFmpegBindings
 //time_t 	    32 	64
 
 
+            ctx.IgnoreFunctionWithName("av_hex_dump");
+            ctx.IgnoreFunctionWithName("av_pkt_dump2");
+            ctx.IgnoreFunctionWithName("av_bprint_strftime");
+            ctx.IgnoreFunctionWithName("av_dbl2ext");
+            ctx.IgnoreFunctionWithName("av_small_strptime");
+            ctx.IgnoreFunctionWithName("av_timegm");
+
+
             ctx.ConvertTypesToPortable(t => t.Declaration.Name == "size_t", PrimitiveType.UIntPtr);
             ctx.ConvertTypesToPortable(t => t.Declaration.Name == "time_t", PrimitiveType.UIntPtr);
             ctx.ConvertTypesToPortable(t => t.Declaration.Name == "ptrdiff_t", PrimitiveType.UIntPtr);
