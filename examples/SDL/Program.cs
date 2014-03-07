@@ -21,43 +21,48 @@ namespace CppSharp
 
         private static void GenerateFFmpeg()
         {
-            var versionString = "2.1.3";
+            string versionString = "2.1.3";
 //            string versionString = "1.0.7";
             var ffmpegInstallDir = new DirectoryInfo(@"C:\WORK\REPOS-SC\FFmpeg_bindings\ffmpeg\" + versionString);
-            var outputDir = new DirectoryInfo(@"C:\WORK\REPOS-SC\SC_trunk\code\build\swingcatalyst\Video\InitialForce.Video.FFmpeg.Interop\");
+            var outputDir =
+                new DirectoryInfo(
+                    @"C:\WORK\REPOS-SC\SC_trunk\code\build\swingcatalyst\Video\InitialForce.Video.FFmpeg.Interop\");
 
-            var utilityClass = new TranslationUnit()
+            var utilityClass = new TranslationUnit
             {
                 Name = "generated",
                 FilePath = Path.Combine(ffmpegInstallDir.FullName, "generated.h")
             };
 
             var avutilLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avutil", "avutil-if-52.dll", outputDir);
-            var avcodecLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avcodec", "avcodec-if-55.dll", outputDir,
-                filesToIgnore: new List<string>
+            var avcodecLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avcodec", "avcodec-if-55.dll",
+                outputDir, new List<string>
                 {
                     "old_codec_ids.h",
                     "dxva2.h",
                     "vda.h",
                     "vdpau.h",
                     "xvmc.h"
-                }, dependentLibraries: new List<IComplexLibrary> {avutilLib});
+                }, new[] {avutilLib});
 
-            var avformatLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avformat", "avformat-if-55.dll", outputDir, null,
-                new List<IComplexLibrary> {avutilLib, avcodecLib});
+            var avformatLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avformat", "avformat-if-55.dll",
+                outputDir, null,
+                new[] {avutilLib, avcodecLib});
 
-            var swresampleLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "swresample", "swresample-if-0.dll", outputDir,
-                null, new List<IComplexLibrary> {avutilLib});
+            var swresampleLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "swresample", "swresample-if-0.dll",
+                outputDir,
+                null, new[] {avutilLib});
 
-            var swscaleLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "swscale", "swscale-if-2.dll", outputDir, filesToIgnore: null,
-                dependentLibraries: new List<IComplexLibrary> {avutilLib});
+            var swscaleLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "swscale", "swscale-if-2.dll",
+                outputDir, null, new[] {avutilLib});
 
-            var avfilterLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avfilter", "avfilter-if-3.dll", outputDir, filesToIgnore: null,
-                dependentLibraries: new List<IComplexLibrary> {avutilLib, swresampleLib, swscaleLib, avcodecLib, avformatLib});
+            var avfilterLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avfilter", "avfilter-if-3.dll",
+                outputDir, null, new[] {avutilLib, swresampleLib, swscaleLib, avcodecLib, avformatLib});
 
-            var avdeviceLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avdevice", "avdevice-if-55.dll", outputDir);
+            var avdeviceLib = new FFmpegSubLibrary(ffmpegInstallDir, utilityClass, "avdevice", "avdevice-if-55.dll",
+                outputDir);
 
-            GenerateComplexLibraries(new List<IComplexLibrary>
+            GenerateComplexLibraries(new[]
             {
                 avcodecLib,
                 avformatLib,
@@ -65,11 +70,11 @@ namespace CppSharp
                 swscaleLib,
                 avfilterLib,
                 avdeviceLib,
-                avutilLib,
-            }, utilityClass);
+                avutilLib
+            });
         }
 
-        private static void GenerateComplexLibraries(IList<IComplexLibrary> complexLibraries, TranslationUnit utilityClass)
+        private static void GenerateComplexLibraries(IList<IComplexLibrary> complexLibraries)
         {
             var log = new TextDiagnosticPrinter();
 
@@ -121,7 +126,8 @@ namespace CppSharp
             }
         }
 
-        private static Driver GenerateLibrary(TextDiagnosticPrinter log, IComplexLibrary library, IList<Driver> dependentLibraries)
+        private static Driver GenerateLibrary(TextDiagnosticPrinter log, IComplexLibrary library,
+            IList<Driver> dependentLibraries)
         {
             var options = new DriverOptions
             {
