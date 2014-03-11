@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using CppSharp.AST;
 
 namespace CppSharp.Generators
@@ -63,8 +64,10 @@ namespace CppSharp.Generators
         /// Generates the outputs.
         /// </summary>
         /// <param name="ignore"></param>
-        public virtual List<GeneratorOutput> Generate(List<TranslationUnit> ignore = null)
+        public virtual List<GeneratorOutput> Generate(IEnumerable<TranslationUnit> ignore = null)
         {
+            ignore = ignore ?? Enumerable.Empty<TranslationUnit>();
+
             var outputs = new List<GeneratorOutput>();
 
             foreach (var unit in Driver.ASTContext.TranslationUnits)
