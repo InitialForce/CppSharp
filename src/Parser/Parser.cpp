@@ -2217,7 +2217,9 @@ CppSharp::AST::PreprocessedEntity^ Parser::WalkPreprocessedEntity(
 
         auto name = clix::marshalString<clix::E_UTF8>(MD->getName()->getName())->Trim();
         auto TU = GetTranslationUnit(Loc, NULL);
-        auto Expansion = TU->FindMacroExpansion(name, true);
+        auto Expansion = gcnew CppSharp::AST::MacroExpansion();
+        Expansion->Name = name;
+        Expansion->Namespace = TU;
 
         Decl->PreprocessedEntities->Add(Expansion);
 
