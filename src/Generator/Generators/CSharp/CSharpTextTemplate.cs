@@ -2745,12 +2745,12 @@ namespace CppSharp.Generators.CSharp
             if (function.IsOperator)
                 identifier = "Operator" + function.OperatorKind;
 
-            var overloads = function.Namespace.GetFunctionOverloads(function)
-                .ToList();
-            var index = overloads.IndexOf(function);
-
-            if (index > 0)
-                identifier += "_" + index.ToString(CultureInfo.InvariantCulture);
+//            var overloads = function.Namespace.GetFunctionOverloads(function)
+//                .ToList();
+//            var index = overloads.IndexOf(function);
+//
+//            if (index > 0)
+//                identifier += "_" + index.ToString(CultureInfo.InvariantCulture);
 
             return identifier;
         }
