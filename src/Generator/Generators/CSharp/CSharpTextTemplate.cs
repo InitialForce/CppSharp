@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Web.Util;
 using CppSharp.AST;
 using CppSharp.AST.Extensions;
@@ -299,7 +300,6 @@ namespace CppSharp.Generators.CSharp
                 return;
 
             PushBlock(BlockKind.BlockComment);
-            WriteLine("/// <summary>");
             var lines = comment.Text.Replace("\r\n", "\n").Split('\n').ToList();
 
             // remove first line
@@ -316,14 +316,93 @@ namespace CppSharp.Generators.CSharp
             };
             var strippedLines = lines.Select(a => a.TrimStart(trimChars).TrimEnd(trimChars)).ToList();
 
-            foreach (var line in strippedLines)
+
+            var doxygenKeywords = new[] {"@param", "@return", "@note"};
+            var joined = string.Join("\n", strippedLines);
+
+            var splitByKeywords = Split(joined, doxygenKeywords);
+
+            var nonDoxy = new List<string>();
+            var doxy = new List<string>();
+            for (int index = 0; index < splitByKeywords.Count; index++)
             {
-                WriteLine("/// " + line);
+                var split = splitByKeywords[index];
+                if (split == "@param")
+                {
+                    index++;
+                    var c = splitByKeywords[index].Trim();
+                    var s = c.Split(' ');
+                    var paramName = s[0];
+                    paramName = paramName.TrimStart('*', '&');
+                    var rest = s.Count() > 1 ? c.Substring(c.IndexOf(paramName) + paramName.Length).Trim() : string.Empty;
+
+                    doxy.Add(string.Format("<param name=\"{0}\">", paramName));
+                    doxy.AddRange(rest.Split('\n'));
+                    doxy.Add(string.Format("</param>"));
+                }
+                else if (split == "@return")
+                {
+                    index++;
+                    var rest = splitByKeywords[index].Trim();
+                    doxy.Add("<returns>");
+                    doxy.AddRange(rest.Split('\n'));
+                    doxy.Add("</returns>");
+                }
+                else if (split == "@note")
+                {
+                    index++;
+                    var rest = splitByKeywords[index].Trim();
+                    doxy.Add("<remark>");
+                    doxy.AddRange(rest.Split('\n'));
+                    doxy.Add("</remark>");
+                }
+                else
+                {
+                    nonDoxy.AddRange(split.Split('\n'));
+                }
             }
-            
+
+            while (nonDoxy.Count > 1 && string.IsNullOrWhiteSpace(nonDoxy.Last()))
+                nonDoxy.RemoveAt(nonDoxy.Count-1);
+
+            WriteLine("/// <summary>");
+            foreach (var line in nonDoxy)
+            {
+                WriteLine("/// " + line.Trim());
+            }
             WriteLine("/// </summary>");
 
+            foreach (var line in doxy)
+            {
+                WriteLine("/// " + line.Trim());
+            }
             PopBlock();
+        }
+
+        public static List<string> Split(string searchStr, string[] separators)
+        {
+            List<string> result = new List<string>();
+            int length = searchStr.Length;
+            int lastMatchEnd = 0;
+            for (int i = 0; i < length; i++)
+            {
+                for (int j = 0; j < separators.Length; j++)
+                {
+                    string str = separators[j];
+                    int sepLen = str.Length;
+                    if (((searchStr[i] == str[0]) && (sepLen <= (length - i))) && ((sepLen == 1) || (String.CompareOrdinal(searchStr, i, str, 0, sepLen) == 0)))
+                    {
+                        result.Add(searchStr.Substring(lastMatchEnd, i - lastMatchEnd));
+                        result.Add(separators[j]);
+                        i += sepLen - 1;
+                        lastMatchEnd = i + 1;
+                        break;
+                    }
+                }
+            }
+            if (lastMatchEnd != length)
+                result.Add(searchStr.Substring(lastMatchEnd));
+            return result;
         }
 
         public void GenerateInlineSummary(RawComment comment)
