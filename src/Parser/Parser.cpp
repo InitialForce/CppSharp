@@ -1104,6 +1104,11 @@ CppSharp::AST::Field^ Parser::WalkFieldCXX(clang::FieldDecl* FD, CppSharp::AST::
 
     Class->Fields->Add(F);
 
+    auto startLoc = GetDeclStartLocation(C.get(), FD);
+    auto endLoc = FD->getLocEnd();
+    auto range = clang::SourceRange(startLoc, endLoc);
+    HandlePreprocessedEntities(F, range, CppSharp::AST::MacroLocation::ClassBody);
+
     return F;
 }
 
@@ -2351,6 +2356,10 @@ void Parser::HandleDeclaration(clang::Decl* D, CppSharp::AST::Declaration^ Decl)
         else if (clang::dyn_cast<clang::ParmVarDecl>(D))
         {
             // Ignore function parameters as we already walk their preprocessed entities.
+        }
+        else if (clang::dyn_cast<clang::FieldDecl>(D))
+        {
+            // Ignore fields as we already walk their preprocessed entities.
         }
         else
         {
