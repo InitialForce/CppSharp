@@ -317,7 +317,7 @@ namespace CppSharp.Generators.CSharp
             var strippedLines = lines.Select(a => a.TrimStart(trimChars).TrimEnd(trimChars)).ToList();
 
 
-            var doxygenKeywords = new[] {"@param", "@return", "@note"};
+            var doxygenKeywords = new[] {"@param", "@return", "@note", "@code", "@endcode"};
             var joined = string.Join("\n", strippedLines);
 
             var splitByKeywords = Split(joined, doxygenKeywords);
@@ -327,38 +327,54 @@ namespace CppSharp.Generators.CSharp
             for (int index = 0; index < splitByKeywords.Count; index++)
             {
                 var split = splitByKeywords[index];
-                if (split == "@param")
+                switch (split)
                 {
-                    index++;
-                    var c = splitByKeywords[index].Trim();
-                    var s = c.Split(' ');
-                    var paramName = s[0];
-                    paramName = paramName.TrimStart('*', '&');
-                    var rest = s.Count() > 1 ? c.Substring(c.IndexOf(paramName) + paramName.Length).Trim() : string.Empty;
+                    case "@param":
+                    {
+                        index++;
+                        var c = splitByKeywords[index].Trim();
+                        var s = c.Split(' ');
+                        var arg = s[0];
+                        arg = arg.TrimStart('*', '&');
+                        var rest = s.Count() > 1 ? c.Substring(c.IndexOf(arg) + arg.Length).Trim() : string.Empty;
 
-                    doxy.Add(string.Format("<param name=\"{0}\">", paramName));
-                    doxy.AddRange(rest.Split('\n'));
-                    doxy.Add(string.Format("</param>"));
-                }
-                else if (split == "@return")
-                {
-                    index++;
-                    var rest = splitByKeywords[index].Trim();
-                    doxy.Add("<returns>");
-                    doxy.AddRange(rest.Split('\n'));
-                    doxy.Add("</returns>");
-                }
-                else if (split == "@note")
-                {
-                    index++;
-                    var rest = splitByKeywords[index].Trim();
-                    doxy.Add("<remark>");
-                    doxy.AddRange(rest.Split('\n'));
-                    doxy.Add("</remark>");
-                }
-                else
-                {
-                    nonDoxy.AddRange(split.Split('\n'));
+                        doxy.Add(string.Format("<param name=\"{0}\">", arg));
+                        doxy.AddRange(rest.Split('\n'));
+                        doxy.Add(string.Format("</param>"));
+                    }
+                        break;
+                    case "@return":
+                    {
+                        index++;
+                        var rest = splitByKeywords[index].Trim();
+                        doxy.Add("<returns>");
+                        doxy.AddRange(rest.Split('\n'));
+                        doxy.Add("</returns>");
+                    }
+                        break;
+                    case "@note":
+                    {
+                        index++;
+                        var rest = splitByKeywords[index].Trim();
+                        doxy.Add("<remark>");
+                        doxy.AddRange(rest.Split('\n'));
+                        doxy.Add("</remark>");
+                    }
+                        break;
+                    case "@endcode":
+                        break;
+                    case "@code":
+                    {
+                        index++;
+                        var rest = splitByKeywords[index].Trim();
+                        doxy.Add("<code>");
+                        doxy.AddRange(rest.Split('\n'));
+                        doxy.Add("</code>");
+                    }
+                        break;
+                    default:
+                        nonDoxy.AddRange(split.Split('\n'));
+                        break;
                 }
             }
 
