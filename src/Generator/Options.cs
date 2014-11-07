@@ -84,6 +84,7 @@ namespace CppSharp
         // Generator options
         public GeneratorKind GeneratorKind;
         public string OutputNamespace;
+        public string OutputContainerClass;
         public string OutputDir;
         public string LibraryName;
         public bool OutputInteropIncludes;
