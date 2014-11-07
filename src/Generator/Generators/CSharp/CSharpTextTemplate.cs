@@ -346,10 +346,13 @@ namespace CppSharp.Generators.CSharp
                     case "@return":
                     {
                         index++;
-                        var rest = splitByKeywords[index].Trim();
-                        doxy.Add("<returns>");
-                        doxy.AddRange(rest.Split('\n'));
-                        doxy.Add("</returns>");
+                        if(splitByKeywords.Count>index)
+                        {
+                            var rest = splitByKeywords[index].Trim();
+                            doxy.Add("<returns>");
+                            doxy.AddRange(rest.Split('\n'));
+                            doxy.Add("</returns>");
+                        }
                     }
                         break;
                     case "@note":
