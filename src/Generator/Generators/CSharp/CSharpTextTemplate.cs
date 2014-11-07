@@ -234,7 +234,7 @@ namespace CppSharp.Generators.CSharp
                 PushBlock(CSharpBlockKind.Functions);
                 if(isNamespace)
                 {
-                    WriteLine("public unsafe partial class {0}", Helpers.SafeIdentifier(Options.OutputNamespace));
+                    WriteLine("public unsafe partial class {0}", Helpers.SafeIdentifier(Options.OutputContainerClass));
                     WriteStartBraceIndent();
                 }
 
