@@ -24,7 +24,8 @@ namespace CppSharp.Passes
             Targets = targets;
         }
 
-        public abstract bool Rename(string name, out string newName);
+        public abstract bool Rename(Declaration decl, string name, out string newName);
+
 
         public bool IsRenameableDecl(Declaration decl)
         {
@@ -79,7 +80,7 @@ namespace CppSharp.Passes
         private bool Rename(Declaration decl)
         {
             string newName;
-            if (Rename(decl.Name, out newName) && !AreThereConflicts(decl, newName))
+            if (Rename(decl, decl.Name, out newName) && !AreThereConflicts(decl, newName))
                 decl.Name = newName;
             return true;
         }
@@ -114,7 +115,7 @@ namespace CppSharp.Passes
                 return false;
 
             string newName;
-            if (Rename(item.Name, out newName))
+            if (Rename(item, item.Name, out newName))
             {
                 item.Name = newName;
                 return true;
@@ -220,7 +221,7 @@ namespace CppSharp.Passes
             Targets = targets;
         }
 
-        public override bool Rename(string name, out string newName)
+        public override bool Rename(Declaration decl, string name, out string newName)
         {
             var replace = Regex.Replace(name, Pattern, Replacement);
 
@@ -254,7 +255,7 @@ namespace CppSharp.Passes
             Pattern = pattern;
         }
 
-        public override bool Rename(string name, out string newName)
+        public override bool Rename(Declaration decl, string name, out string newName)
         {
             newName = null;
 
