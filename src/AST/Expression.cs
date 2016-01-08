@@ -174,6 +174,7 @@ namespace CppSharp.AST
                 case PrimitiveType.UInt32:
                 case PrimitiveType.Int64:
                 case PrimitiveType.UInt64:
+                case PrimitiveType.Void:
                 {
                     if (IsHexadecimal(DebugText))
                     {
