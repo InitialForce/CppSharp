@@ -71,6 +71,12 @@ namespace CppSharp.AST
                 parsedValue = parsedString;
                 return true;
             }
+            if (expression.Contains("<<") || expression.Contains(">>")) 
+            {
+                primitiveType = PrimitiveType.UInt64;
+                parsedValue = expression;
+                return true;
+            }
             primitiveType = PrimitiveType.Void;
             parsedValue = null;
             return false;
