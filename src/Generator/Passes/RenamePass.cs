@@ -71,6 +71,9 @@ namespace CppSharp.Passes
             if (!IsRenameableDecl(decl))
                 return true;
 
+            if (decl is Enumeration && !Targets.HasFlag(RenameTargets.Enum))
+                return false;
+
             if (decl.Name == null)
                 return true;
 
