@@ -152,6 +152,10 @@ namespace CppSharp.Generators.CSharp
         {
             GenerateHeader();
 
+            WriteLine("// ReSharper disable RedundantUsingDirective");
+            WriteLine("// ReSharper disable CheckNamespace");
+            WriteLine("#pragma warning disable 1584,1711,1572,1581,1580,1573");
+
             PushBlock(CSharpBlockKind.Usings);
             WriteLine("using System;");
             WriteLine("using System.Runtime.InteropServices;");
@@ -300,7 +304,11 @@ namespace CppSharp.Generators.CSharp
                 return;
 
             PushBlock(BlockKind.BlockComment);
-            var lines = comment.Text.Replace("\r\n", "\n").Split('\n').ToList();
+            var commentText = comment.Text;
+            commentText = commentText.Replace("\r\n", "\n");
+            commentText = commentText.Replace(@"<", @"&lt;");
+            commentText = commentText.Replace(@">", @"&gt;");
+            var lines = commentText.Split('\n').ToList();
 
             // remove first line
             if (lines.Any() && lines.First().Trim() == "/**")
