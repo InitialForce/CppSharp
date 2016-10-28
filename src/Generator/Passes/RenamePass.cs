@@ -29,16 +29,16 @@ namespace CppSharp.Passes
 
         public bool IsRenameableDecl(Declaration decl)
         {
-            if (decl is Class) return true;
-            if (decl is Field) return true;
+            if (decl is Class && Targets.HasFlag(RenameTargets.Class)) return true;
+            if (decl is Field && Targets.HasFlag(RenameTargets.Field)) return true;
             var function = decl as Function;
-            if (function != null)
+            if (function != null && Targets.HasFlag(RenameTargets.Function))
             {
                 // special case the IDisposable.Dispose that could be added later
-                return !function.IsOperator && function.Name != "dispose";
+                return !function.IsOperator && function.Name != "dispose" ;
             }
-            if (decl is Parameter) return true;
-            if (decl is Enumeration) return true;
+            if (decl is Parameter && Targets.HasFlag(RenameTargets.Parameter)) return true;
+            if (decl is Enumeration && Targets.HasFlag(RenameTargets.Enum)) return true;
             if (decl is Property) return true;
             if (decl is Event) return true;
             if (decl is TypedefDecl) return true;
@@ -70,9 +70,6 @@ namespace CppSharp.Passes
 
             if (!IsRenameableDecl(decl))
                 return true;
-
-            if (decl is Enumeration && !Targets.HasFlag(RenameTargets.Enum))
-                return false;
 
             if (decl.Name == null)
                 return true;
