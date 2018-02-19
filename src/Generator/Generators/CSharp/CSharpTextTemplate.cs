@@ -154,6 +154,13 @@ namespace CppSharp.Generators.CSharp
 
             WriteLine("// ReSharper disable RedundantUsingDirective");
             WriteLine("// ReSharper disable CheckNamespace");
+            WriteLine("// ReSharper disable UnusedMember.Global");
+            WriteLine("// ReSharper disable InconsistentNaming");
+            WriteLine("// ReSharper disable MemberCanBePrivate.Global");
+            WriteLine("// ReSharper disable FieldCanBeMadeReadOnly.Global");
+            WriteLine("// ReSharper disable RedundantUnsafeContext");
+            WriteLine("// ReSharper disable PartialTypeWithSinglePart");
+
             WriteLine("#pragma warning disable 1584,1711,1572,1581,1580,1573");
 
             PushBlock(CSharpBlockKind.Usings);
